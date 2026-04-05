@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-headline: "Noto Serif", serif;
+  --font-body: "Noto Serif", serif;
+  --font-label: "Inter", sans-serif;
+
+  --color-background: #fbf9f5;
+  --color-surface: #fbf9f5;
+  --color-surface-container: #efeeea;
+  --color-surface-container-low: #f5f3ef;
+  --color-surface-container-high: #eae8e4;
+  --color-surface-container-highest: #e4e2de;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-variant: #dfe4e1;
+  
+  --color-primary: #00342b;
+  --color-primary-container: #004d40;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #7ebdac;
+  
+  --color-secondary: #7b5800;
+  --color-secondary-container: #fdc34d;
+  --color-on-secondary-container: #715000;
+  
+  --color-outline: #707975;
+  --color-outline-variant: #bfc9c4;
+  
+  --color-inverse-surface: #1b1c1a;
+  --color-on-inverse-surface: #f2f0ed;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-inverse-surface transition-colors duration-300;
+  }
+  
+  .dark body {
+    --color-background: #121413;
+    --color-surface: #121413;
+    --color-surface-container: #1e2120;
+    --color-surface-container-low: #1a1c1b;
+    --color-surface-container-high: #272b29;
+    --color-surface-container-highest: #323634;
+    --color-surface-container-lowest: #0a0c0b;
+    --color-surface-variant: #3f4945;
+    
+    --color-primary: #94d3c1;
+    --color-primary-container: #004d40;
+    --color-on-primary: #00382f;
+    --color-on-primary-container: #afefdd;
+    
+    --color-inverse-surface: #e2e3e0;
+    --color-on-inverse-surface: #1b1c1a;
+  }
+}
+
+.glass-panel {
+  @apply bg-surface-variant/80 backdrop-blur-xl border border-white/20 dark:border-white/5;
+}
+
+.scripture-drop-cap::first-letter {
+  @apply text-5xl font-bold float-left mr-3 mt-1 text-primary;
+}
