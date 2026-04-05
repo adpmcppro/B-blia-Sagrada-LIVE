@@ -1,5 +1,5 @@
 {
   "name": "Biblia Sagrada LIVE",
-  "description": "A multi-translation Bible app for live streaming and projection with advanced customization and OBS/vMix integration.",
+  "description": "A multi-translation Bible app for live streaming and projection using bibliaonline.com.br as the primary source for scriptures.",
   "requestFramePermissions": []
 }

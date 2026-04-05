@@ -28,10 +28,11 @@ import { ProjectionMode } from './components/ProjectionMode';
 import { AuthModal } from './components/AuthModal';
 import { PricingModal } from './components/PricingModal';
 import { IntegrationModal } from './components/IntegrationModal';
-import { getDailyMeditation } from './services/geminiService';
+import { getDailyMeditation, fetchBibleChapter } from './services/geminiService';
 import { cn } from './lib/utils';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 
 export default function App() {
   const [user, setUser] = React.useState<FirebaseUser | null>(null);
@@ -41,10 +42,10 @@ export default function App() {
   const [state, setState] = React.useState<BibleState>({
     currentBook: 'jhn',
     currentChapter: 1,
-    translation: 'KJV',
+    translation: 'ALMEIDA',
     theme: 'light',
     fontSize: 20,
-    language: 'en',
+    language: 'pt',
     isPro: false,
     projectionSettings: {
       backgroundColor: '#000000',
@@ -56,10 +57,24 @@ export default function App() {
       backgroundOpacity: 0.3,
       overlayColor: '#000000',
       dualTranslation: false,
-      secondaryTranslation: 'NIV',
+      secondaryTranslation: 'NVI',
       isCleanFeed: false
     }
   });
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'clean') {
+      setIsProjectionOpen(true);
+      setState(prev => ({
+        ...prev,
+        projectionSettings: {
+          ...prev.projectionSettings,
+          isCleanFeed: true
+        }
+      }));
+    }
+  }, []);
 
   const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
@@ -67,6 +82,9 @@ export default function App() {
   const [meditation, setMeditation] = React.useState<string | null>(null);
   const [isGeneratingMeditation, setIsGeneratingMeditation] = React.useState(false);
   const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
+  const [verses, setVerses] = React.useState<string[]>([]);
+  const [secondaryVerses, setSecondaryVerses] = React.useState<string[]>([]);
+  const [isLoadingVerses, setIsLoadingVerses] = React.useState(false);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -80,6 +98,53 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Sync projection state from Firestore
+  React.useEffect(() => {
+    const docRef = doc(db, 'projection', 'current');
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Only update if we are in Clean Feed mode or if the change came from another user
+        // Actually, in Clean Feed mode we ALWAYS want to follow the Firestore state.
+        const isCleanFeed = new URLSearchParams(window.location.search).get('mode') === 'clean';
+        
+        if (isCleanFeed || data.updatedBy !== auth.currentUser?.uid) {
+          setState(prev => ({
+            ...prev,
+            currentBook: data.bookId,
+            currentChapter: data.chapter,
+            projectedVerse: data.verseIndex,
+            translation: data.translation
+          }));
+        }
+      }
+    }, (error) => {
+      console.error("Firestore sync error:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const updateProjectionInFirestore = async (updates: Partial<{ bookId: string, chapter: number, verseIndex: number, translation: string }>) => {
+    if (!auth.currentUser) return;
+    
+    const docRef = doc(db, 'projection', 'current');
+    const currentData = {
+      bookId: state.currentBook,
+      chapter: state.currentChapter,
+      verseIndex: state.projectedVerse ?? 0,
+      translation: state.translation,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      updatedBy: auth.currentUser.uid
+    };
+
+    try {
+      await setDoc(docRef, currentData);
+    } catch (error) {
+      console.error("Error updating projection state:", error);
+    }
+  };
 
   const copyToClipboard = (text: string, index: number) => {
     const reference = `${currentBookData?.name} ${state.currentChapter}:${index + 1}`;
@@ -97,21 +162,28 @@ export default function App() {
     }
   }, [state.theme]);
 
-  React.useEffect(() => {
-    setState(prev => ({ ...prev, projectedVerse: 0 }));
-    setMeditation(null);
-  }, [state.currentBook, state.currentChapter]);
+    React.useEffect(() => {
+      setMeditation(null);
+      
+      const loadVerses = async () => {
+        setIsLoadingVerses(true);
+        
+        // Use bibliaonline via our API
+        const mainText = await fetchBibleChapter(state.currentBook, state.currentChapter, state.translation, state.language);
+        setVerses(mainText || []);
+
+        // Load secondary verses if needed
+        if (state.projectionSettings.dualTranslation && state.projectionSettings.secondaryTranslation) {
+          const secText = await fetchBibleChapter(state.currentBook, state.currentChapter, state.projectionSettings.secondaryTranslation, state.language);
+          setSecondaryVerses(secText || []);
+        }
+        setIsLoadingVerses(false);
+      };
+
+      loadVerses();
+    }, [state.currentBook, state.currentChapter, state.translation, state.projectionSettings.dualTranslation, state.projectionSettings.secondaryTranslation, state.language]);
 
   const currentBookData = BOOKS.find(b => b.id === state.currentBook);
-  const verses = state.language === 'en' 
-    ? MOCK_BIBLE_DATA[state.currentBook]?.[state.currentChapter] || []
-    : MOCK_BIBLE_DATA_PT[state.currentBook]?.[state.currentChapter] || [];
-
-  const secondaryVerses = state.projectionSettings.dualTranslation && state.projectionSettings.secondaryTranslation
-    ? (state.language === 'en' 
-        ? MOCK_BIBLE_DATA[state.currentBook]?.[state.currentChapter] || []
-        : MOCK_BIBLE_DATA_PT[state.currentBook]?.[state.currentChapter] || [])
-    : [];
 
   const handleMeditation = async () => {
     if (verses.length === 0) return;
@@ -133,13 +205,17 @@ export default function App() {
           <div className="flex items-center gap-8">
             <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">Biblia Sagrada LIVE</h1>
             
-            <div className="hidden lg:flex items-center bg-surface-container p-1 rounded-full">
-              {(['KJV', 'NIV', 'ALMEIDA', 'NVI'] as Translation[]).map(t => (
+            <div className="hidden lg:flex items-center bg-surface-container p-1 rounded-full overflow-x-auto max-w-[400px] no-scrollbar">
+              {(['KJV', 'NIV', 'ALMEIDA', 'NVI', 'ACF', 'ARC', 'ARA', 'NAA', 'NVT'] as Translation[]).map(t => (
                 <button
-                  key={t}
-                  onClick={() => setState(prev => ({ ...prev, translation: t }))}
+                  key={`trans-${t}`}
+                  onClick={() => {
+                    const newBook = t;
+                    setState(prev => ({ ...prev, translation: newBook }));
+                    updateProjectionInFirestore({ translation: newBook });
+                  }}
                   className={cn(
-                    "px-4 py-1 text-[10px] font-label font-bold rounded-full transition-all",
+                    "px-4 py-1 text-[10px] font-label font-bold rounded-full transition-all whitespace-nowrap",
                     state.translation === t 
                       ? "bg-surface-container-lowest text-primary shadow-sm" 
                       : "text-outline hover:text-primary"
@@ -184,7 +260,7 @@ export default function App() {
                   <div className="flex items-center gap-2 justify-end">
                     {state.isPro && <Zap className="w-3 h-3 text-secondary fill-secondary" />}
                     <p className="text-[10px] font-label font-bold text-primary uppercase tracking-widest leading-none">
-                      {user.displayName || 'User'}
+                      {user.displayName || 'Usuário'}
                     </p>
                   </div>
                   <button 
@@ -288,9 +364,16 @@ export default function App() {
               className="scripture-body space-y-8 font-headline leading-[1.8] text-inverse-surface selection:bg-secondary-container/30"
               style={{ fontSize: `${state.fontSize}px` }}
             >
-              {verses.length > 0 ? (
+              {isLoadingVerses ? (
+                <div className="py-20 text-center space-y-6">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-outline font-body italic">
+                    {state.language === 'en' ? "Fetching scripture from the archives..." : "Buscando as escrituras nos arquivos..."}
+                  </p>
+                </div>
+              ) : verses.length > 0 ? (
                 verses.map((text, i) => (
-                  <p key={i} className={cn("relative group", i === 0 && "scripture-drop-cap")}>
+                  <p key={`v-${state.currentBook}-${state.currentChapter}-${i}`} className={cn("relative group", i === 0 && "scripture-drop-cap")}>
                     <sup className="text-[10px] font-label font-bold text-outline mr-3 select-none">
                       {i + 1}
                     </sup>
@@ -299,6 +382,7 @@ export default function App() {
                       <button 
                         onClick={() => {
                           setState(prev => ({ ...prev, projectedVerse: i }));
+                          updateProjectionInFirestore({ verseIndex: i });
                           setIsProjectionOpen(true);
                         }}
                         className="p-2 hover:bg-surface-container rounded-full text-outline hover:text-primary transition-colors"
@@ -327,8 +411,8 @@ export default function App() {
                   <Quote className="w-12 h-12 text-outline/20 mx-auto" />
                   <p className="text-outline font-body italic">
                     {state.language === 'en' 
-                      ? "This chapter is currently being archived. Please select John 1 for a preview." 
-                      : "Este capítulo está sendo arquivado. Por favor, selecione João 1 para uma prévia."}
+                      ? "Unable to load scripture. Please check your connection or try another chapter." 
+                      : "Não foi possível carregar as escrituras. Verifique sua conexão ou tente outro capítulo."}
                   </p>
                 </div>
               )}
@@ -336,17 +420,62 @@ export default function App() {
 
             {/* Navigation Controls */}
             <footer className="pt-20 border-t border-outline-variant/10 flex items-center justify-between">
-              <button className="flex items-center gap-3 text-outline hover:text-primary transition-colors group">
+              <button 
+                onClick={() => {
+                  let newChapter = state.currentChapter;
+                  let newBook = state.currentBook;
+                  if (state.currentChapter > 1) {
+                    newChapter = state.currentChapter - 1;
+                  } else {
+                    const bookIndex = BOOKS.findIndex(b => b.id === state.currentBook);
+                    if (bookIndex > 0) {
+                      const prevBook = BOOKS[bookIndex - 1];
+                      newBook = prevBook.id;
+                      newChapter = prevBook.chapters;
+                    }
+                  }
+                  setState(prev => ({ ...prev, currentBook: newBook, currentChapter: newChapter, projectedVerse: 0 }));
+                  updateProjectionInFirestore({ bookId: newBook, chapter: newChapter, verseIndex: 0 });
+                }}
+                className="flex items-center gap-3 text-outline hover:text-primary transition-colors group"
+              >
                 <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
                 <div className="text-left">
-                  <span className="block text-[10px] font-label uppercase tracking-widest font-bold">Previous</span>
-                  <span className="font-headline font-bold">Chapter {state.currentChapter - 1}</span>
+                  <span className="block text-[10px] font-label uppercase tracking-widest font-bold">
+                    {state.language === 'en' ? 'Previous' : 'Anterior'}
+                  </span>
+                  <span className="font-headline font-bold">
+                    {state.language === 'en' ? 'Chapter' : 'Capítulo'} {state.currentChapter - 1 <= 0 ? '' : state.currentChapter - 1}
+                  </span>
                 </div>
               </button>
-              <button className="flex items-center gap-3 text-outline hover:text-primary transition-colors group text-right">
+              <button 
+                onClick={() => {
+                  const bookData = BOOKS.find(b => b.id === state.currentBook);
+                  let newChapter = state.currentChapter;
+                  let newBook = state.currentBook;
+                  if (state.currentChapter < (bookData?.chapters || 0)) {
+                    newChapter = state.currentChapter + 1;
+                  } else {
+                    const bookIndex = BOOKS.findIndex(b => b.id === state.currentBook);
+                    if (bookIndex < BOOKS.length - 1) {
+                      const nextBook = BOOKS[bookIndex + 1];
+                      newBook = nextBook.id;
+                      newChapter = 1;
+                    }
+                  }
+                  setState(prev => ({ ...prev, currentBook: newBook, currentChapter: newChapter, projectedVerse: 0 }));
+                  updateProjectionInFirestore({ bookId: newBook, chapter: newChapter, verseIndex: 0 });
+                }}
+                className="flex items-center gap-3 text-outline hover:text-primary transition-colors group text-right"
+              >
                 <div className="text-right">
-                  <span className="block text-[10px] font-label uppercase tracking-widest font-bold">Next</span>
-                  <span className="font-headline font-bold">Chapter {state.currentChapter + 1}</span>
+                  <span className="block text-[10px] font-label uppercase tracking-widest font-bold">
+                    {state.language === 'en' ? 'Next' : 'Próximo'}
+                  </span>
+                  <span className="font-headline font-bold">
+                    {state.language === 'en' ? 'Chapter' : 'Capítulo'} {state.currentChapter + 1}
+                  </span>
                 </div>
                 <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -362,7 +491,10 @@ export default function App() {
             isOpen={isLibraryOpen} 
             onClose={() => setIsLibraryOpen(false)} 
             language={state.language}
-            onSelect={(bookId, ch) => setState(prev => ({ ...prev, currentBook: bookId, currentChapter: ch }))}
+            onSelect={(bookId, ch) => {
+              setState(prev => ({ ...prev, currentBook: bookId, currentChapter: ch, projectedVerse: 0 }));
+              updateProjectionInFirestore({ bookId, chapter: ch, verseIndex: 0 });
+            }}
           />
         )}
         {isSettingsOpen && (
@@ -383,8 +515,14 @@ export default function App() {
               ...prev, 
               projectionSettings: { ...prev.projectionSettings, ...settings } 
             }))}
-            onSelectVerse={(index) => setState(prev => ({ ...prev, projectedVerse: index }))}
-            onNavigate={(bookId, chapter) => setState(prev => ({ ...prev, currentBook: bookId, currentChapter: chapter }))}
+            onSelectVerse={(index) => {
+              setState(prev => ({ ...prev, projectedVerse: index }));
+              updateProjectionInFirestore({ verseIndex: index });
+            }}
+            onNavigate={(bookId, chapter) => {
+              setState(prev => ({ ...prev, currentBook: bookId, currentChapter: chapter, projectedVerse: 0 }));
+              updateProjectionInFirestore({ bookId, chapter, verseIndex: 0 });
+            }}
             onUpgrade={() => setIsPricingOpen(true)}
           />
         )}
@@ -395,21 +533,25 @@ export default function App() {
             language={state.language} 
           />
         )}
-        <PricingModal 
-          isOpen={isPricingOpen} 
-          onClose={() => setIsPricingOpen(false)} 
-          language={state.language} 
-        />
-        <IntegrationModal 
-          isOpen={isIntegrationOpen} 
-          onClose={() => setIsIntegrationOpen(false)} 
-          language={state.language} 
-          isPro={state.isPro || false}
-          onUpgrade={() => {
-            setIsIntegrationOpen(false);
-            setIsPricingOpen(true);
-          }}
-        />
+        {isPricingOpen && (
+          <PricingModal 
+            isOpen={isPricingOpen} 
+            onClose={() => setIsPricingOpen(false)} 
+            language={state.language} 
+          />
+        )}
+        {isIntegrationOpen && (
+          <IntegrationModal 
+            isOpen={isIntegrationOpen} 
+            onClose={() => setIsIntegrationOpen(false)} 
+            language={state.language} 
+            isPro={state.isPro || false}
+            onUpgrade={() => {
+              setIsIntegrationOpen(false);
+              setIsPricingOpen(true);
+            }}
+          />
+        )}
       </AnimatePresence>
 
       {/* Floating Action Menu (Mobile) */}

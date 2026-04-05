@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: projection
+    // Document ID: current
+    // Fields:
+    //   - bookId: string (required) - The ID of the current book.
+    //   - chapter: number (required) - The current chapter number.
+    //   - verseIndex: number (required) - The index of the currently projected verse.
+    //   - translation: string (required) - The current translation code.
+    //   - updatedAt: string (required, date-time format) - When the state was last updated.
+    //   - updatedBy: string (required) - The UID of the user who last updated the state.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidProjectionState(data) {
+      return hasRequiredFields(['bookId', 'chapter', 'verseIndex', 'translation', 'updatedAt', 'updatedBy']) &&
+             hasOnlyAllowedFields(['bookId', 'chapter', 'verseIndex', 'translation', 'updatedAt', 'updatedBy']) &&
+             data.bookId is string &&
+             data.chapter is number &&
+             data.verseIndex is number &&
+             data.translation is string &&
+             data.updatedAt is string &&
+             data.updatedBy is string &&
+             data.updatedBy == request.auth.uid;
+    }
+
+    match /projection/current {
+      allow read: if true; // Publicly readable for the Clean Feed
+      allow write: if isAuthenticated() && isValidProjectionState(request.resource.data);
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

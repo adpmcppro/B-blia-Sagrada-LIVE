@@ -91,15 +91,14 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
   };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-md"
-        />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+      />
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -174,6 +173,15 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
                       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       {copied ? content.copied : content.copy}
                     </button>
+                    <a 
+                      href={cleanFeedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 bg-surface-container-low text-primary rounded-xl font-label text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 hover:bg-primary hover:text-on-primary transition-all border border-white/5"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      {language === 'en' ? 'Open' : 'Abrir'}
+                    </a>
                   </div>
                 </div>
 
@@ -186,6 +194,5 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
   );
 }

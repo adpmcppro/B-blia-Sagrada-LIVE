@@ -31,8 +31,7 @@ export function PricingModal({ isOpen, onClose, language }: PricingModalProps) {
         "NDI-Ready Web Integration",
         "Priority Support"
       ],
-      cta: "Subscribe Now",
-      footer: "Free lifetime access for @adpmcp.org accounts."
+      cta: "Subscribe Now"
     },
     pt: {
       title: "Atualize para Biblia Sagrada LIVE Pro",
@@ -50,14 +49,12 @@ export function PricingModal({ isOpen, onClose, language }: PricingModalProps) {
         "Integração Web Pronta para NDI",
         "Suporte Prioritário"
       ],
-      cta: "Assinar Agora",
-      footer: "Acesso vitalício gratuito para contas @adpmcp.org."
+      cta: "Assinar Agora"
     }
   }[language];
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -150,12 +147,11 @@ export function PricingModal({ isOpen, onClose, language }: PricingModalProps) {
             <div className="mt-12 pt-8 border-t border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2 text-outline">
                 <Star className="w-4 h-4" />
-                <p className="text-[10px] font-label font-bold uppercase tracking-widest">{content.footer}</p>
+                <p className="text-[10px] font-label font-bold uppercase tracking-widest">Premium Access</p>
               </div>
             </div>
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
   );
 }

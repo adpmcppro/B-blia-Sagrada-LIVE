@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "ProjectionState": {
+      "title": "Projection State",
+      "description": "The current state of the Bible projection, synchronized across all instances.",
+      "type": "object",
+      "properties": {
+        "bookId": {
+          "type": "string",
+          "description": "The ID of the current book."
+        },
+        "chapter": {
+          "type": "integer",
+          "description": "The current chapter number."
+        },
+        "verseIndex": {
+          "type": "integer",
+          "description": "The index of the currently projected verse."
+        },
+        "translation": {
+          "type": "string",
+          "description": "The current translation code."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the state was last updated."
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "The UID of the user who last updated the state."
+        }
+      },
+      "required": ["bookId", "chapter", "verseIndex", "translation", "updatedAt", "updatedBy"]
+    }
+  },
+  "firestore": {
+    "/projection/current": {
+      "schema": "ProjectionState",
+      "description": "The single document holding the current projection state."
+    }
+  }
+}

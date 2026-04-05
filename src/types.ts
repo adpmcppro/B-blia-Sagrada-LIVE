@@ -1,4 +1,4 @@
-export type Translation = 'KJV' | 'NIV' | 'ALMEIDA' | 'NVI';
+export type Translation = 'KJV' | 'NIV' | 'ALMEIDA' | 'NVI' | 'ACF' | 'ARC' | 'ARA' | 'NAA' | 'NVT';
 
 export interface Verse {
   number: number;
