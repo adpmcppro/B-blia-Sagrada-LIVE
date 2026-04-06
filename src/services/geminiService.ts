@@ -1,6 +1,8 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+// Safe way to access API Key in Vite (client-side)
+const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || (process.env.GEMINI_API_KEY as string) || '';
+const ai = new GoogleGenAI({ apiKey });
 
 export async function getDailyMeditation(verse: string, language: 'en' | 'pt') {
   const prompt = language === 'en' 
