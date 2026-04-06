@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword, 
   updateProfile,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   User as FirebaseUser
 } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -52,10 +53,28 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
         message = language === 'en'
           ? 'Password should be at least 6 characters.'
           : 'A senha deve ter pelo menos 6 caracteres.';
+      } else if (err.code === 'auth/network-request-failed') {
+        message = language === 'en'
+          ? 'Network error. Please check your internet connection or if your browser is blocking Firebase.'
+          : 'Erro de rede. Verifique sua conexão ou se o navegador está bloqueando o Firebase.';
       }
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError(language === 'en' ? 'Please enter your email first.' : 'Por favor, insira seu e-mail primeiro.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setError(null);
+      alert(language === 'en' ? 'Password reset email sent!' : 'E-mail de redefinição de senha enviado!');
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -121,9 +140,20 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
-                Senha
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
+                  Senha
+                </label>
+                {isLogin && (
+                  <button 
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-[10px] font-label font-bold text-primary hover:underline uppercase tracking-tighter"
+                  >
+                    {language === 'en' ? 'Forgot Password?' : 'Esqueci a senha'}
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
                 <input 

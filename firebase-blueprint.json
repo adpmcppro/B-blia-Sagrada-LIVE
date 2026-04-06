@@ -33,11 +33,40 @@
       },
       "required": ["bookId", "chapter", "verseIndex", "translation", "updatedAt", "updatedBy"]
     }
+    "User": {
+      "title": "User Profile",
+      "description": "User profile data stored in Firestore.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "The user's profile photo URL (Base64 or external)."
+        },
+        "isPro": {
+          "type": "boolean",
+          "description": "Whether the user has Pro status."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the profile was last updated."
+        }
+      },
+      "required": ["displayName", "updatedAt"]
+    }
   },
   "firestore": {
     "/projection/current": {
       "schema": "ProjectionState",
       "description": "The single document holding the current projection state."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document."
     }
   }
 }

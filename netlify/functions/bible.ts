@@ -20,8 +20,7 @@ const BOOK_MAPPING: Record<string, string> = {
 };
 
 const TRANSLATION_MAPPING: Record<string, string> = {
-  'KJV': 'kjv', 'NIV': 'niv', 'ALMEIDA': 'aa', 'NVI': 'nvi',
-  'ACF': 'acf', 'ARC': 'arc', 'ARA': 'ara', 'NAA': 'naa', 'NVT': 'nvt'
+  'BKJ': 'kjv', 'ARA': 'ara', 'ACF': 'acf', 'NVI': 'nvi', 'NTLH': 'ntlh'
 };
 
 const handler: Handler = async (event) => {

@@ -44,9 +44,26 @@ service cloud.firestore {
              data.updatedBy == request.auth.uid;
     }
 
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['displayName', 'updatedAt']) &&
+             data.displayName is string &&
+             data.updatedAt is string &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('isPro' in data) || data.isPro is bool);
+    }
+
     match /projection/current {
       allow read: if true; // Publicly readable for the Clean Feed
       allow write: if isAuthenticated() && isValidProjectionState(request.resource.data);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidUser(request.resource.data);
     }
 
     // Default deny

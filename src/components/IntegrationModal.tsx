@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Radio, Monitor, Copy, Check, ExternalLink, Zap } from 'lucide-react';
+import { X, Radio, Monitor, Copy, Check, ExternalLink, Zap, Smartphone, Share2, Tv } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface IntegrationModalProps {
@@ -14,6 +14,7 @@ interface IntegrationModalProps {
 export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }: IntegrationModalProps) {
   const [copied, setCopied] = React.useState(false);
   const cleanFeedUrl = window.location.href + "?mode=clean";
+  const remoteControlUrl = window.location.href; // The main app is the remote control
 
   if (!isOpen) return null;
 
@@ -22,7 +23,7 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
       title: "Livestream Integration",
       subtitle: "Connect Biblia Sagrada LIVE to your broadcasting software.",
       proBadge: "PRO FEATURE",
-      upgradeCta: "Upgrade to Pro to unlock integration",
+      upgradeCta: "Upgrade to Pro to unlock professional integration",
       methods: [
         {
           title: "OBS Studio / Streamlabs",
@@ -31,30 +32,54 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
             "Add a new 'Browser Source' in OBS.",
             "Paste the Clean Feed URL below.",
             "Set width to 1920 and height to 1080.",
-            "Check 'Shutdown source when not visible'."
+            "Check 'Shutdown source when not visible'.",
+            "Use 'Interact' in OBS to control if needed, or use this dashboard."
           ]
         },
         {
           title: "vMix / Wirecast",
           icon: Monitor,
           steps: [
-            "Add a 'Web Browser' input.",
+            "Add a 'Web Browser' input in vMix.",
             "Use the Clean Feed URL.",
-            "Enable 'Transparent Background' if needed.",
-            "Control verses from this main window."
+            "Set resolution to 1920x1080.",
+            "Enable 'Transparent Background' (Chroma Key) if using a green preset.",
+            "Control via API: Use the URL parameters to change verses remotely."
+          ]
+        },
+        {
+          title: "ProPresenter / EasyWorship",
+          icon: Tv,
+          steps: [
+            "Create a new 'Web View' or 'Browser' slide.",
+            "Paste the Clean Feed URL.",
+            "Set as a background layer for lower thirds.",
+            "Adjust opacity and scale to fit your screen layout."
+          ]
+        },
+        {
+          title: "NDI / Syphon / Spout",
+          icon: Share2,
+          steps: [
+            "Use 'NDI Screen Capture' to send this window as an NDI source.",
+            "On Mac, use Syphon to share frames between local apps.",
+            "On Windows, use Spout for low-latency local sharing.",
+            "Ideal for high-end production with zero network lag."
           ]
         }
       ],
-      cleanFeed: "Clean Feed URL",
+      remoteTitle: "Remote Control",
+      remoteDesc: "Open this app on your phone or tablet to control the projection from anywhere in the church.",
+      cleanFeed: "Clean Feed URL (For OBS/vMix)",
       copy: "Copy URL",
       copied: "Copied!",
-      ndiNote: "NDI Integration: Use the 'NDI Screen Capture' tool or a virtual webcam bridge to send the Clean Feed as a high-quality NDI source."
+      ndiNote: "Professional Tip: Use the Clean Feed for lower thirds and overlays. The dashboard remains your control center."
     },
     pt: {
       title: "Integração para Transmissão",
       subtitle: "Conecte a Biblia Sagrada LIVE ao seu software de transmissão.",
       proBadge: "RECURSO PRO",
-      upgradeCta: "Atualize para o Pro para desbloquear a integração",
+      upgradeCta: "Atualize para o Pro para desbloquear integração profissional",
       methods: [
         {
           title: "OBS Studio / Streamlabs",
@@ -63,29 +88,53 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
             "Adicione uma nova 'Fonte de Navegador' no OBS.",
             "Cole a URL do Clean Feed abaixo.",
             "Defina a largura como 1920 e a altura como 1080.",
-            "Marque 'Desativar fonte quando não visível'."
+            "Marque 'Desativar fonte quando não visível'.",
+            "Use a função 'Interagir' no OBS para controle direto."
           ]
         },
         {
           title: "vMix / Wirecast",
           icon: Monitor,
           steps: [
-            "Adicione uma entrada de 'Navegador Web'.",
+            "Adicione uma entrada de 'Navegador Web' no vMix.",
             "Use a URL do Clean Feed.",
-            "Ative 'Fundo Transparente' se necessário.",
-            "Controle os versículos a partir desta janela principal."
+            "Defina a resolução para 1920x1080.",
+            "Ative 'Fundo Transparente' se usar preset Chroma Key.",
+            "Controle Remoto: Use parâmetros de URL para trocar versos."
+          ]
+        },
+        {
+          title: "ProPresenter / EasyWorship",
+          icon: Tv,
+          steps: [
+            "Crie um novo slide de 'Web View' ou 'Navegador'.",
+            "Cole a URL do Clean Feed.",
+            "Defina como camada de fundo para letras/versículos.",
+            "Ajuste a opacidade e escala conforme seu layout."
+          ]
+        },
+        {
+          title: "NDI / Syphon / Spout",
+          icon: Share2,
+          steps: [
+            "Use 'NDI Screen Capture' para enviar esta janela como fonte NDI.",
+            "No Mac, use Syphon para compartilhar entre apps locais.",
+            "No Windows, use Spout para compartilhamento de baixa latência.",
+            "Ideal para produções de alto nível sem lag de rede."
           ]
         }
       ],
-      cleanFeed: "URL do Clean Feed",
+      remoteTitle: "Controle Remoto",
+      remoteDesc: "Abra este app no seu celular ou tablet para controlar a projeção de qualquer lugar da igreja.",
+      cleanFeed: "URL do Clean Feed (Para OBS/vMix)",
       copy: "Copiar URL",
       copied: "Copiado!",
-      ndiNote: "Integração NDI: Use a ferramenta 'NDI Screen Capture' ou uma ponte de webcam virtual para enviar o Clean Feed como uma fonte NDI de alta qualidade."
+      ndiNote: "Dica Profissional: Use o Clean Feed para sobreposições e GC. O painel principal continua sendo seu centro de comando."
     }
   }[language];
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(cleanFeedUrl);
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -103,7 +152,7 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="relative w-full max-w-3xl bg-surface-container-highest rounded-3xl shadow-2xl overflow-hidden border border-white/10"
+          className="relative w-full max-w-4xl bg-surface-container-highest rounded-3xl shadow-2xl overflow-hidden border border-white/10 max-h-[90vh] flex flex-col"
         >
           <button 
             onClick={onClose}
@@ -112,7 +161,7 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
             <X className="w-6 h-6" />
           </button>
 
-          <div className="p-12">
+          <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-3xl font-headline font-bold mb-2">{content.title}</h2>
@@ -139,18 +188,19 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
               </div>
             ) : (
               <div className="space-y-12">
-                <div className="grid md:grid-cols-2 gap-8">
+                {/* Methods Grid */}
+                <div className="grid md:grid-cols-2 gap-6">
                   {content.methods.map((m, i) => (
-                    <div key={i} className="bg-surface-container rounded-2xl p-8 border border-white/5">
-                      <div className="flex items-center gap-3 mb-6">
+                    <div key={i} className="bg-surface-container rounded-2xl p-6 border border-white/5 hover:bg-surface-container-low transition-colors">
+                      <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-primary/20 rounded-lg">
                           <m.icon className="w-5 h-5 text-primary" />
                         </div>
-                        <h3 className="font-headline font-bold">{m.title}</h3>
+                        <h3 className="font-headline font-bold text-sm">{m.title}</h3>
                       </div>
-                      <ul className="space-y-3">
+                      <ul className="space-y-2">
                         {m.steps.map((s, j) => (
-                          <li key={j} className="flex items-start gap-3 text-sm text-outline">
+                          <li key={j} className="flex items-start gap-3 text-[11px] text-outline leading-relaxed">
                             <span className="font-bold text-primary">{j + 1}.</span>
                             <span>{s}</span>
                           </li>
@@ -160,33 +210,61 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
                   ))}
                 </div>
 
-                <div className="space-y-4">
-                  <label className="font-label text-[10px] font-bold tracking-widest uppercase text-outline">{content.cleanFeed}</label>
-                  <div className="flex gap-2">
-                    <div className="flex-1 bg-surface-container p-4 rounded-xl font-mono text-xs text-primary truncate border border-white/5">
-                      {cleanFeedUrl}
+                {/* URLs Section */}
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Clean Feed */}
+                  <div className="space-y-4">
+                    <label className="font-label text-[10px] font-bold tracking-widest uppercase text-outline">{content.cleanFeed}</label>
+                    <div className="flex flex-col gap-2">
+                      <div className="bg-surface-container p-4 rounded-xl font-mono text-[10px] text-primary truncate border border-white/5">
+                        {cleanFeedUrl}
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleCopy(cleanFeedUrl)}
+                          className="flex-1 py-3 bg-primary text-on-primary rounded-xl font-label text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2 hover:scale-105 transition-all"
+                        >
+                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          {copied ? content.copied : content.copy}
+                        </button>
+                        <a 
+                          href={cleanFeedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-3 bg-surface-container-low text-primary rounded-xl hover:bg-primary hover:text-on-primary transition-all border border-white/5"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
                     </div>
-                    <button 
-                      onClick={handleCopy}
-                      className="px-6 bg-primary text-on-primary rounded-xl font-label text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 hover:scale-105 transition-all"
-                    >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copied ? content.copied : content.copy}
-                    </button>
-                    <a 
-                      href={cleanFeedUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-6 bg-surface-container-low text-primary rounded-xl font-label text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 hover:bg-primary hover:text-on-primary transition-all border border-white/5"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      {language === 'en' ? 'Open' : 'Abrir'}
-                    </a>
+                  </div>
+
+                  {/* Remote Control */}
+                  <div className="space-y-4">
+                    <label className="font-label text-[10px] font-bold tracking-widest uppercase text-outline">{content.remoteTitle}</label>
+                    <div className="bg-surface-container p-4 rounded-xl border border-white/5 flex gap-4">
+                      <div className="w-20 h-20 bg-white p-2 rounded-lg shrink-0">
+                        {/* Placeholder for QR Code - in a real app we'd use a QR lib */}
+                        <div className="w-full h-full bg-black/5 flex items-center justify-center">
+                          <Smartphone className="w-8 h-8 text-black" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-outline leading-relaxed">{content.remoteDesc}</p>
+                        <button 
+                          onClick={() => handleCopy(remoteControlUrl)}
+                          className="text-[10px] font-label font-bold text-primary hover:underline flex items-center gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          {language === 'en' ? 'Copy Remote Link' : 'Copiar Link Remoto'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <div className="p-6 bg-surface-container/50 rounded-xl border border-white/5 flex items-start gap-4">
-                  <ExternalLink className="w-5 h-5 text-secondary shrink-0 mt-1" />
+                  <Zap className="w-5 h-5 text-secondary shrink-0 mt-1" />
                   <p className="text-xs text-outline leading-relaxed italic">{content.ndiNote}</p>
                 </div>
               </div>

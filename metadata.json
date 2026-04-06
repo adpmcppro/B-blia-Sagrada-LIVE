@@ -1,5 +1,5 @@
 {
   "name": "Biblia Sagrada LIVE",
-  "description": "A multi-translation Bible app for live streaming and projection using bibliaonline.com.br as the primary source for scriptures.",
-  "requestFramePermissions": []
+  "description": "Plataforma profissional de projeção e leitura bíblica para igrejas e transmissões ao vivo.",
+  "requestFramePermissions": ["microphone"]
 }

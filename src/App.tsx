@@ -28,6 +28,8 @@ import { ProjectionMode } from './components/ProjectionMode';
 import { AuthModal } from './components/AuthModal';
 import { PricingModal } from './components/PricingModal';
 import { IntegrationModal } from './components/IntegrationModal';
+import { UserProfile } from './components/UserProfile';
+import { useVoiceCommands } from './hooks/useVoiceCommands';
 import { getDailyMeditation, fetchBibleChapter } from './services/geminiService';
 import { cn } from './lib/utils';
 import { auth, db } from './firebase';
@@ -36,11 +38,8 @@ import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 
 export default function App() {
   const [user, setUser] = React.useState<FirebaseUser | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
-  const [isIntegrationOpen, setIsIntegrationOpen] = React.useState(false);
-  const [isPricingOpen, setIsPricingOpen] = React.useState(false);
   const [state, setState] = React.useState<BibleState>({
-    currentBook: 'jhn',
+    currentBook: 'gen',
     currentChapter: 1,
     translation: 'ARA',
     theme: 'light',
@@ -76,9 +75,33 @@ export default function App() {
     }
   }, []);
 
+  const { isListening, startListening, stopListening } = useVoiceCommands({
+    onCommand: (command) => {
+      if (command.type === 'navigate') {
+        setState(prev => ({
+          ...prev,
+          currentBook: command.bookId || prev.currentBook,
+          currentChapter: command.chapter || prev.currentChapter,
+          projectedVerse: command.verse !== undefined ? command.verse - 1 : prev.projectedVerse
+        }));
+        if (command.bookId || command.chapter || command.verse !== undefined) {
+          updateProjectionInFirestore({
+            bookId: command.bookId || state.currentBook,
+            chapter: command.chapter || state.currentChapter,
+            verseIndex: command.verse !== undefined ? command.verse - 1 : state.projectedVerse
+          });
+        }
+      }
+    },
+    language: state.language
+  });
   const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isProjectionOpen, setIsProjectionOpen] = React.useState(false);
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
+  const [isPricingOpen, setIsPricingOpen] = React.useState(false);
+  const [isIntegrationOpen, setIsIntegrationOpen] = React.useState(false);
   const [meditation, setMeditation] = React.useState<string | null>(null);
   const [isGeneratingMeditation, setIsGeneratingMeditation] = React.useState(false);
   const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
@@ -87,16 +110,46 @@ export default function App() {
   const [isLoadingVerses, setIsLoadingVerses] = React.useState(false);
 
   React.useEffect(() => {
+    let unsubProfile: (() => void) | undefined;
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {
+        // Apply Pro status for adpmcp.org domain immediately
         const isAdpmcp = user.email?.endsWith('@adpmcp.org');
-        setState(prev => ({ ...prev, isPro: isAdpmcp }));
+        if (isAdpmcp) {
+          setState(prev => ({ ...prev, isPro: true }));
+        }
+
+        // Listen to Firestore for profile updates
+        const userDocRef = doc(db, 'users', user.uid);
+        unsubProfile = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setState(prev => ({
+              ...prev,
+              isPro: data.isPro || isAdpmcp || false,
+            }));
+            // Update user object with Firestore data for UI
+            setUser(prev => prev ? {
+              ...prev,
+              displayName: data.displayName || prev.displayName,
+              photoURL: data.photoURL || prev.photoURL
+            } : null);
+          }
+        }, (error) => {
+          console.error("Error listening to user profile:", error);
+          // If permission denied, we still have the basic Pro status from email check
+        });
       } else {
         setState(prev => ({ ...prev, isPro: false }));
+        if (unsubProfile) unsubProfile();
       }
     });
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
   // Sync projection state from Firestore
@@ -228,6 +281,20 @@ export default function App() {
 
           <div className="flex items-center gap-4">
             <button 
+              onClick={isListening ? stopListening : startListening}
+              className={cn(
+                "p-2 rounded-full transition-all relative group",
+                isListening ? "bg-error text-on-error animate-pulse" : "bg-surface-container text-primary hover:bg-primary hover:text-on-primary"
+              )}
+              title={state.language === 'en' ? 'Voice Commands' : 'Comandos de Voz'}
+            >
+              <Zap className={cn("w-5 h-5", isListening && "fill-current")} />
+              {isListening && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-error border-2 border-surface rounded-full" />
+              )}
+            </button>
+
+            <button 
               onClick={() => setIsIntegrationOpen(true)}
               className="hidden sm:flex items-center gap-2 px-4 py-2 bg-surface-container text-primary rounded-full font-label text-[10px] font-bold tracking-widest hover:bg-primary hover:text-on-primary transition-all"
             >
@@ -254,25 +321,29 @@ export default function App() {
             <div className="h-6 w-px bg-outline-variant/20 mx-2" />
 
             {user ? (
-              <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setIsProfileOpen(true)}
+                className="flex items-center gap-3 group"
+              >
                 <div className="hidden sm:block text-right">
                   <div className="flex items-center gap-2 justify-end">
                     {state.isPro && <Zap className="w-3 h-3 text-secondary fill-secondary" />}
-                    <p className="text-[10px] font-label font-bold text-primary uppercase tracking-widest leading-none">
+                    <p className="text-[10px] font-label font-bold text-primary uppercase tracking-widest leading-none group-hover:text-secondary transition-colors">
                       {user.displayName || 'Usuário'}
                     </p>
                   </div>
-                  <button 
-                    onClick={handleLogout}
-                    className="text-[9px] font-label font-bold text-outline hover:text-error transition-colors uppercase tracking-widest"
-                  >
-                    {state.language === 'en' ? 'Sign Out' : 'Sair'}
-                  </button>
+                  <p className="text-[9px] font-label font-bold text-outline uppercase tracking-widest">
+                    {state.language === 'en' ? 'Profile' : 'Perfil'}
+                  </p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-headline font-bold">
-                  {user.displayName?.[0] || <UserIcon className="w-5 h-5" />}
+                <div className="w-10 h-10 rounded-full bg-primary-container overflow-hidden flex items-center justify-center text-on-primary-container font-headline font-bold border-2 border-transparent group-hover:border-primary transition-all">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    user.displayName?.[0] || <UserIcon className="w-5 h-5" />
+                  )}
                 </div>
-              </div>
+              </button>
             ) : (
               <button 
                 onClick={() => setIsAuthModalOpen(true)}
@@ -567,6 +638,28 @@ export default function App() {
           </button>
         </div>
       </div>
+      <footer className="bg-surface-container-lowest border-t border-outline-variant/10 py-12">
+        <div className="max-w-screen-2xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-headline font-bold text-primary">Biblia Sagrada LIVE</h2>
+            <div className="h-4 w-px bg-outline-variant/30" />
+            <p className="text-xs text-outline font-label uppercase tracking-widest font-bold">
+              2026 (C) A Mídia da Igreja
+            </p>
+          </div>
+          <div className="flex items-center gap-8">
+            <button className="text-[10px] font-label font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors">Termos</button>
+            <button className="text-[10px] font-label font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors">Privacidade</button>
+            <button className="text-[10px] font-label font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors">Suporte</button>
+          </div>
+        </div>
+      </footer>
+
+      <UserProfile 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+        language={state.language} 
+      />
     </div>
   );
 }

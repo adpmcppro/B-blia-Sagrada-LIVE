@@ -104,6 +104,9 @@ export function ProjectionMode({
   // Check for clean feed mode from URL
   const isCleanFeed = new URLSearchParams(window.location.search).get('mode') === 'clean';
 
+  const currentVerses = verses.filter((_, i) => i === state.projectedVerse);
+  const currentSecondaryVerses = secondaryVerses.filter((_, i) => i === state.projectedVerse);
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -132,8 +135,8 @@ export function ProjectionMode({
       <div 
         className="absolute inset-0 pointer-events-none transition-opacity duration-700 z-[-1]"
         style={{ 
-          backgroundColor: settings.overlayColor,
-          opacity: settings.backgroundOpacity 
+          backgroundColor: settings.backgroundColor,
+          opacity: settings.backgroundImageUrl ? settings.backgroundOpacity : 1
         }}
       />
 
@@ -230,7 +233,10 @@ export function ProjectionMode({
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="max-w-6xl w-full space-y-12"
           >
-            <div className="space-y-8">
+            <div className={cn(
+              "grid gap-12 items-center",
+              settings.dualTranslation ? "grid-cols-2 text-left" : "grid-cols-1"
+            )}>
               <p 
                 className="leading-tight font-bold"
                 style={{ fontSize: `${settings.fontSize}px` }}
@@ -239,12 +245,14 @@ export function ProjectionMode({
               </p>
               
               {settings.dualTranslation && secondaryVerseText && (
-                <p 
-                  className="leading-tight font-bold opacity-70 italic"
-                  style={{ fontSize: `${settings.fontSize * 0.8}px` }}
-                >
-                  {secondaryVerseText}
-                </p>
+                <div className="border-l border-white/10 pl-12">
+                  <p 
+                    className="leading-tight font-bold opacity-70 italic"
+                    style={{ fontSize: `${settings.fontSize * 0.8}px` }}
+                  >
+                    {secondaryVerseText}
+                  </p>
+                </div>
               )}
             </div>
             
@@ -367,6 +375,15 @@ export function ProjectionMode({
                             className="hidden"
                           />
                         </label>
+                        {settings.backgroundImageUrl && (
+                          <button 
+                            onClick={() => onUpdateSettings({ backgroundImageUrl: undefined })}
+                            className="p-3 bg-error/10 text-error rounded-lg hover:bg-error/20 transition-colors"
+                            title="Remover Fundo"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -403,7 +420,7 @@ export function ProjectionMode({
                         onChange={(e) => onUpdateSettings({ secondaryTranslation: e.target.value as Translation })}
                         className="w-full bg-surface-container p-3 rounded-lg text-xs font-label focus:outline-none"
                       >
-                        {(['KJV', 'NIV', 'ALMEIDA', 'NVI', 'ACF', 'ARC', 'ARA', 'NAA', 'NVT'] as Translation[]).map(t => (
+                        {(['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH'] as Translation[]).map(t => (
                           <option key={`sec-trans-${t}`} value={t}>{t}</option>
                         ))}
                       </select>
