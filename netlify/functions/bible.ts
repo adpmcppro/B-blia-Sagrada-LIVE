@@ -25,17 +25,21 @@ const TRANSLATION_MAPPING: Record<string, string> = {
 };
 
 const handler: Handler = async (event) => {
-  // Path format: /.netlify/functions/bible/version/book/chapter
+  // Improved path parsing: take the last 3 segments regardless of prefix
   const pathParts = event.path.split('/').filter(Boolean);
-  // Expected parts: ['.netlify', 'functions', 'bible', 'version', 'book', 'chapter']
-  const version = pathParts[3];
-  const book = pathParts[4];
-  const chapter = pathParts[5];
+  
+  // If the path is /api/bible/version/book/chapter or /.netlify/functions/bible/version/book/chapter
+  // we want the last three: version, book, chapter
+  const chapter = pathParts.pop();
+  const book = pathParts.pop();
+  const version = pathParts.pop();
 
-  if (!version || !book || !chapter) {
+  console.log(`Fetching Bible: Version=${version}, Book=${book}, Chapter=${chapter}`);
+
+  if (!version || !book || !chapter || version === 'functions' || version === 'bible') {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "Missing parameters" }),
+      body: JSON.stringify({ error: "Invalid parameters", path: event.path }),
     };
   }
 
@@ -45,10 +49,13 @@ const handler: Handler = async (event) => {
     const c = chapter;
 
     const url = `https://www.bibliaonline.com.br/${v}/${b}/${c}`;
+    console.log(`Requesting URL: ${url}`);
     
     const response = await axios.get(url, {
+      timeout: 10000, // 10s timeout
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
       }
     });
     
