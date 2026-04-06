@@ -42,7 +42,7 @@ export default function App() {
   const [state, setState] = React.useState<BibleState>({
     currentBook: 'jhn',
     currentChapter: 1,
-    translation: 'ALMEIDA',
+    translation: 'ARA',
     theme: 'light',
     fontSize: 20,
     language: 'pt',
@@ -57,7 +57,7 @@ export default function App() {
       backgroundOpacity: 0.3,
       overlayColor: '#000000',
       dualTranslation: false,
-      secondaryTranslation: 'NVI',
+      secondaryTranslation: 'ARA',
       isCleanFeed: false
     }
   });
@@ -206,13 +206,12 @@ export default function App() {
             <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">Biblia Sagrada LIVE</h1>
             
             <div className="hidden lg:flex items-center bg-surface-container p-1 rounded-full overflow-x-auto max-w-[400px] no-scrollbar">
-              {(['KJV', 'NIV', 'ALMEIDA', 'NVI', 'ACF', 'ARC', 'ARA', 'NAA', 'NVT'] as Translation[]).map(t => (
+              {(['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH'] as Translation[]).map(t => (
                 <button
                   key={`trans-${t}`}
                   onClick={() => {
-                    const newBook = t;
-                    setState(prev => ({ ...prev, translation: newBook }));
-                    updateProjectionInFirestore({ translation: newBook });
+                    setState(prev => ({ ...prev, translation: t }));
+                    updateProjectionInFirestore({ translation: t });
                   }}
                   className={cn(
                     "px-4 py-1 text-[10px] font-label font-bold rounded-full transition-all whitespace-nowrap",

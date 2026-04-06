@@ -22,15 +22,33 @@ export async function getDailyMeditation(verse: string, language: 'en' | 'pt') {
 }
 
 export async function fetchBibleChapter(book: string, chapter: number, translation: string, language: 'en' | 'pt') {
+  const prompt = `Atue como uma API de Bíblia de alta precisão. 
+  Retorne APENAS um array JSON de strings contendo os versículos do capítulo solicitado.
+  Não inclua números de versículos, títulos ou introduções. Apenas o texto puro de cada versículo.
+  
+  Livro: ${book}
+  Capítulo: ${chapter}
+  Versão: ${translation}
+  Idioma: ${language === 'pt' ? 'Português' : 'Inglês'}
+
+  Formato de resposta esperado: ["versículo 1", "versículo 2", ...]`;
+
   try {
-    const response = await fetch(`/api/bible/${translation}/${book}/${chapter}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data as string[];
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const text = response.text;
+    if (!text) return [];
+    
+    const verses = JSON.parse(text);
+    return Array.isArray(verses) ? verses : [];
   } catch (error) {
-    console.error("Error fetching Bible chapter from API:", error);
+    console.error("Error fetching Bible chapter from Gemini:", error);
     return [];
   }
 }
