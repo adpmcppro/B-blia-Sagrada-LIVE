@@ -57,7 +57,7 @@ export function Library({ isOpen, onClose, onSelect, language }: LibraryProps) {
           <div className="w-1/2 border-r border-outline-variant/10 overflow-y-auto p-4 space-y-1">
             {filteredBooks.map(book => (
               <button
-                key={book.id}
+                key={`lib-book-${book.id}`}
                 onClick={() => setSelectedBook(book)}
                 className={cn(
                   "w-full text-left px-4 py-3 rounded-lg transition-all font-headline text-lg",
@@ -81,7 +81,7 @@ export function Library({ isOpen, onClose, onSelect, language }: LibraryProps) {
                 <div className="grid grid-cols-5 gap-3">
                   {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map(ch => (
                     <button
-                      key={ch}
+                      key={`lib-ch-${ch}`}
                       onClick={() => {
                         onSelect(selectedBook.id, ch);
                         onClose();

@@ -159,7 +159,7 @@ export function ProjectionMode({
                   className="bg-transparent font-label text-xs font-bold uppercase tracking-widest focus:outline-none cursor-pointer hover:text-primary transition-colors"
                 >
                   {BOOKS.map(b => (
-                    <option key={b.id} value={b.id} className="bg-surface-container-highest text-on-surface">
+                    <option key={`proj-book-${b.id}`} value={b.id} className="bg-surface-container-highest text-on-surface">
                       {state.language === 'en' ? b.name : b.namePt}
                     </option>
                   ))}
@@ -170,7 +170,7 @@ export function ProjectionMode({
                   className="bg-transparent font-label text-xs font-bold uppercase tracking-widest focus:outline-none cursor-pointer hover:text-primary transition-colors"
                 >
                   {Array.from({ length: BOOKS.find(b => b.id === state.currentBook)?.chapters || 1 }, (_, i) => i + 1).map(ch => (
-                    <option key={ch} value={ch} className="bg-surface-container-highest text-on-surface">
+                    <option key={`proj-ch-${ch}`} value={ch} className="bg-surface-container-highest text-on-surface">
                       {ch}
                     </option>
                   ))}
