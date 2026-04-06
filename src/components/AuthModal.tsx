@@ -39,7 +39,21 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
       }
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      let message = err.message;
+      if (err.code === 'auth/invalid-credential') {
+        message = language === 'en' 
+          ? 'Invalid email or password. If you don\'t have an account, please register.' 
+          : 'Email ou senha inválidos. Se você não tem uma conta, por favor cadastre-se.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        message = language === 'en'
+          ? 'This email is already in use.'
+          : 'Este email já está em uso.';
+      } else if (err.code === 'auth/weak-password') {
+        message = language === 'en'
+          ? 'Password should be at least 6 characters.'
+          : 'A senha deve ter pelo menos 6 caracteres.';
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
