@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/bible/:version/:book/:chapter",
+      "destination": "/api/bible?version=:version&book=:book&chapter=:chapter"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
