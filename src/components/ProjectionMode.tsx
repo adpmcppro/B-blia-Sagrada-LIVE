@@ -241,7 +241,21 @@ export function ProjectionMode({
                 className="leading-tight font-bold"
                 style={{ fontSize: `${settings.fontSize}px` }}
               >
-                {currentVerseText}
+                {currentVerseText.split(' ').map((word, idx) => {
+                  const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase();
+                  const isHighlighted = state.highlightedWords?.includes(cleanWord);
+                  return (
+                    <span 
+                      key={idx} 
+                      className={cn(
+                        "transition-all duration-300",
+                        isHighlighted && "bg-yellow-400/80 text-black px-2 rounded-lg shadow-lg scale-110 inline-block mx-1"
+                      )}
+                    >
+                      {word}{' '}
+                    </span>
+                  );
+                })}
               </p>
               
               {settings.dualTranslation && secondaryVerseText && (

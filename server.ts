@@ -69,62 +69,67 @@ async function startServer() {
       
       const response = await axios.get(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
         },
-        timeout: 10000
+        timeout: 15000
       });
       
       const $ = cheerio.load(response.data);
       const verses: string[] = [];
       
-      // bibliaonline.com.br structure
-      // Usually verses are in <p> tags with a specific structure
+      // Try multiple selectors common in bibliaonline.com.br
+      // 1. Standard article paragraphs (NVI, etc.)
       $('article p').each((_, element) => {
         const text = $(element).text().trim();
-        // Check if it starts with a number (verse number)
         if (/^\d+/.test(text)) {
-          // Split by verse numbers if multiple verses in one paragraph
           const parts = text.split(/(?=\d+\s)/).filter(p => p.trim().length > 0);
           parts.forEach(part => {
             const cleanPart = part.replace(/^\d+\s*/, '').trim();
-            if (cleanPart.length > 0) {
-              verses.push(cleanPart);
-            }
+            if (cleanPart.length > 0) verses.push(cleanPart);
           });
         }
       });
 
-      // Fallback if the above fails
+      // 2. Specific verse spans (ARC, ACF, etc.)
       if (verses.length === 0) {
-        $('span.v, .verse, .v').each((_, element) => {
+        $('span.v, .verse, .v, .verse-text').each((_, element) => {
           const el = $(element).clone();
           el.find('sup, .v-num, .verse-number').remove();
           let text = el.text().trim();
           text = text.replace(/^\d+\s*/, '').trim();
-          if (text && text.length > 1) {
-            verses.push(text);
-          }
+          if (text && text.length > 1) verses.push(text);
         });
       }
 
-      // Second fallback for some versions
+      // 3. Generic paragraphs with numbers
       if (verses.length === 0) {
         $('p').each((_, element) => {
           const text = $(element).text().trim();
           if (/^\d+/.test(text)) {
             const cleanText = text.replace(/^\d+\s*/, '').trim();
-            if (cleanText.length > 5) {
-              verses.push(cleanText);
-            }
+            if (cleanText.length > 5) verses.push(cleanText);
+          }
+        });
+      }
+
+      // 4. If still empty, maybe it's a different layout (some versions use <div> with numbers)
+      if (verses.length === 0) {
+        $('div').each((_, element) => {
+          const text = $(element).text().trim();
+          if (/^\d+/.test(text) && text.length < 500) {
+             const cleanText = text.replace(/^\d+\s*/, '').trim();
+             if (cleanText.length > 5) verses.push(cleanText);
           }
         });
       }
 
       if (verses.length > 0) {
+        console.log(`Successfully fetched ${verses.length} verses for ${cacheKey}`);
         cache.set(cacheKey, { data: verses, timestamp: Date.now() });
         res.json(verses);
       } else {
-        console.log(`No verses found for ${url}`);
+        console.log(`No verses found for ${url}. HTML length: ${response.data.length}`);
         res.status(404).json({ error: "No verses found" });
       }
     } catch (error: any) {

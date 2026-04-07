@@ -46,6 +46,7 @@ export default function App() {
     fontSize: 20,
     language: 'pt',
     isPro: false,
+    highlightedWords: [],
     projectionSettings: {
       backgroundColor: '#000000',
       textColor: '#ffffff',
@@ -168,7 +169,8 @@ export default function App() {
             currentBook: data.bookId,
             currentChapter: data.chapter,
             projectedVerse: data.verseIndex,
-            translation: data.translation
+            translation: data.translation,
+            highlightedWords: data.highlightedWords || []
           }));
         }
       }
@@ -178,7 +180,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const updateProjectionInFirestore = async (updates: Partial<{ bookId: string, chapter: number, verseIndex: number, translation: string }>) => {
+  const updateProjectionInFirestore = async (updates: Partial<{ bookId: string, chapter: number, verseIndex: number, translation: string, highlightedWords: string[] }>) => {
     if (!auth.currentUser) return;
     
     const docRef = doc(db, 'projection', 'current');
@@ -187,6 +189,7 @@ export default function App() {
       chapter: state.currentChapter,
       verseIndex: state.projectedVerse ?? 0,
       translation: state.translation,
+      highlightedWords: state.highlightedWords || [],
       ...updates,
       updatedAt: new Date().toISOString(),
       updatedBy: auth.currentUser.uid
@@ -197,6 +200,20 @@ export default function App() {
     } catch (error) {
       console.error("Error updating projection state:", error);
     }
+  };
+
+  const toggleWordHighlight = (word: string) => {
+    const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase();
+    setState(prev => {
+      const currentHighlights = prev.highlightedWords || [];
+      const isHighlighted = currentHighlights.includes(cleanWord);
+      const newHighlights = isHighlighted 
+        ? currentHighlights.filter(w => w !== cleanWord)
+        : [...currentHighlights, cleanWord];
+      
+      updateProjectionInFirestore({ highlightedWords: newHighlights });
+      return { ...prev, highlightedWords: newHighlights };
+    });
   };
 
   const copyToClipboard = (text: string, index: number) => {
@@ -447,7 +464,22 @@ export default function App() {
                     <sup className="text-[10px] font-label font-bold text-outline mr-3 select-none">
                       {i + 1}
                     </sup>
-                    {text}
+                    {text.split(' ').map((word, wordIdx) => {
+                      const cleanWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase();
+                      const isHighlighted = state.highlightedWords?.includes(cleanWord);
+                      return (
+                        <span 
+                          key={wordIdx} 
+                          onClick={() => toggleWordHighlight(word)}
+                          className={cn(
+                            "cursor-pointer hover:bg-primary/10 transition-colors px-0.5 rounded",
+                            isHighlighted && "bg-secondary/30 text-secondary-container font-bold"
+                          )}
+                        >
+                          {word}{' '}
+                        </span>
+                      );
+                    })}
                     <span className="absolute -right-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
                       <button 
                         onClick={() => {

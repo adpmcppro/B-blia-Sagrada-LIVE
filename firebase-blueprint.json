@@ -29,10 +29,15 @@
         "updatedBy": {
           "type": "string",
           "description": "The UID of the user who last updated the state."
+        },
+        "highlightedWords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of words to highlight in the projection."
         }
       },
       "required": ["bookId", "chapter", "verseIndex", "translation", "updatedAt", "updatedBy"]
-    }
+    },
     "User": {
       "title": "User Profile",
       "description": "User profile data stored in Firestore.",

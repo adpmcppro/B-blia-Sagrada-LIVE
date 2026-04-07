@@ -44,5 +44,6 @@ export interface BibleState {
   language: 'en' | 'pt';
   projectionSettings: ProjectionSettings;
   projectedVerse?: number;
+  highlightedWords?: string[];
   isPro?: boolean;
 }

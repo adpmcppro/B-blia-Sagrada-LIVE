@@ -34,14 +34,15 @@ service cloud.firestore {
 
     function isValidProjectionState(data) {
       return hasRequiredFields(['bookId', 'chapter', 'verseIndex', 'translation', 'updatedAt', 'updatedBy']) &&
-             hasOnlyAllowedFields(['bookId', 'chapter', 'verseIndex', 'translation', 'updatedAt', 'updatedBy']) &&
+             hasOnlyAllowedFields(['bookId', 'chapter', 'verseIndex', 'translation', 'updatedAt', 'updatedBy', 'highlightedWords']) &&
              data.bookId is string &&
              data.chapter is number &&
              data.verseIndex is number &&
              data.translation is string &&
              data.updatedAt is string &&
              data.updatedBy is string &&
-             data.updatedBy == request.auth.uid;
+             data.updatedBy == request.auth.uid &&
+             (!('highlightedWords' in data) || data.highlightedWords is list);
     }
 
     function isOwner(userId) {
