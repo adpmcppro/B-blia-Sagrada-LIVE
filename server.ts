@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { GoogleGenAI } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,9 +41,14 @@ const TRANSLATION_MAPPING: Record<string, string> = {
 const cache = new Map<string, { data: string[], timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
 
+// Initialize Gemini
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  app.use(express.json());
 
   // API Route for Bible fetching
   app.get("/api/bible/:version/:book/:chapter", async (req, res) => {
@@ -64,21 +70,33 @@ async function startServer() {
       const response = await axios.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        },
+        timeout: 10000
       });
       
       const $ = cheerio.load(response.data);
       const verses: string[] = [];
       
-      // bibliaonline.com.br structure varies by version, but usually:
-      // 1. Each verse is in a <span> with class 'v' or similar
-      // 2. Or verses are in <p> tags within an <article>
-      
-      // Try specific verse spans first (most accurate for separation)
-      const verseSpans = $('span.v, .verse, .v');
-      if (verseSpans.length > 0) {
-        verseSpans.each((_, element) => {
-          // Clone to avoid modifying the original DOM if needed
+      // bibliaonline.com.br structure
+      // Usually verses are in <p> tags with a specific structure
+      $('article p').each((_, element) => {
+        const text = $(element).text().trim();
+        // Check if it starts with a number (verse number)
+        if (/^\d+/.test(text)) {
+          // Split by verse numbers if multiple verses in one paragraph
+          const parts = text.split(/(?=\d+\s)/).filter(p => p.trim().length > 0);
+          parts.forEach(part => {
+            const cleanPart = part.replace(/^\d+\s*/, '').trim();
+            if (cleanPart.length > 0) {
+              verses.push(cleanPart);
+            }
+          });
+        }
+      });
+
+      // Fallback if the above fails
+      if (verses.length === 0) {
+        $('span.v, .verse, .v').each((_, element) => {
           const el = $(element).clone();
           el.find('sup, .v-num, .verse-number').remove();
           let text = el.text().trim();
@@ -89,57 +107,51 @@ async function startServer() {
         });
       }
 
-      // If no spans found, try paragraphs but be careful not to group
+      // Second fallback for some versions
       if (verses.length === 0) {
-        $('article p, .chapter p, .text p').each((_, element) => {
-          const el = $(element).clone();
-          
-          // Before removing numbers, check if we should split by them
-          const rawText = el.text().trim();
-          
-          // Regex to find verse numbers followed by text
-          // We look for patterns like "1 Text 2 Text" or "1. Text 2. Text"
-          const verseParts = rawText.split(/\s*(?=\d+\s+)/).filter(p => p.trim().length > 0);
-          
-          if (verseParts.length > 1) {
-            verseParts.forEach(part => {
-              let cleanPart = part.replace(/^\d+[\s\.]*/, '').trim();
-              if (cleanPart.length > 1) {
-                verses.push(cleanPart);
-              }
-            });
-          } else {
-            el.find('sup, .v-num, .verse-number').remove();
-            let text = el.text().trim();
-            text = text.replace(/^\d+[\s\.]*/, '').trim();
-            if (text && text.length > 5) {
-              verses.push(text);
+        $('p').each((_, element) => {
+          const text = $(element).text().trim();
+          if (/^\d+/.test(text)) {
+            const cleanText = text.replace(/^\d+\s*/, '').trim();
+            if (cleanText.length > 5) {
+              verses.push(cleanText);
             }
           }
         });
       }
 
-      // Final fallback: if we have one very long verse that contains numbers, split it
-      if (verses.length === 1 && verses[0].length > 500) {
-        const singleVerse = verses[0];
-        const splitVerses = singleVerse.split(/\s*(?=\d+\s+)/).filter(p => p.trim().length > 0);
-        if (splitVerses.length > 1) {
-          verses.length = 0; // Clear
-          splitVerses.forEach(v => {
-            let cleanV = v.replace(/^\d+[\s\.]*/, '').trim();
-            if (cleanV.length > 1) verses.push(cleanV);
-          });
-        }
-      }
-
       if (verses.length > 0) {
         cache.set(cacheKey, { data: verses, timestamp: Date.now() });
+        res.json(verses);
+      } else {
+        console.log(`No verses found for ${url}`);
+        res.status(404).json({ error: "No verses found" });
       }
-
-      res.json(verses);
     } catch (error: any) {
       console.error("Error fetching from bibliaonline:", error.message);
       res.status(500).json({ error: "Failed to fetch Bible chapter" });
+    }
+  });
+
+  // API Route for Meditation
+  app.post("/api/meditation", async (req, res) => {
+    try {
+      const { verse, language } = req.body;
+      if (!verse) return res.status(400).json({ error: "Verse is required" });
+
+      const prompt = language === 'en' 
+        ? `Provide a short, 3-sentence spiritual meditation based on this Bible verse: "${verse}". Focus on encouragement and practical application.`
+        : `Forneça uma meditação espiritual curta de 3 frases baseada neste versículo bíblico: "${verse}". Foque em encorajamento e aplicação prática.`;
+
+      const response = await genAI.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("Error generating meditation:", error.message);
+      res.status(500).json({ error: "Failed to generate meditation" });
     }
   });
 
