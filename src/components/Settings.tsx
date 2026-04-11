@@ -22,7 +22,9 @@ export function Settings({ state, onUpdate, isOpen, onClose }: SettingsProps) {
       className="fixed right-0 top-0 bottom-0 w-full max-w-sm z-50 bg-surface shadow-2xl border-l border-outline-variant/10 p-8 overflow-y-auto"
     >
       <div className="flex items-center justify-between mb-12">
-        <h2 className="text-3xl font-headline font-bold text-primary">Configurações</h2>
+        <h2 className="text-3xl font-headline font-bold text-primary">
+          {state.language === 'en' ? 'Settings' : 'Configurações'}
+        </h2>
         <button onClick={onClose} className="p-2 hover:bg-surface-container-high rounded-full transition-colors">
           <X className="w-6 h-6 text-outline" />
         </button>
@@ -33,7 +35,9 @@ export function Settings({ state, onUpdate, isOpen, onClose }: SettingsProps) {
         <section>
           <div className="flex items-center gap-3 mb-6">
             <Languages className="w-5 h-5 text-primary" />
-            <h3 className="font-label uppercase tracking-widest text-xs font-bold text-outline">Idioma do Aplicativo</h3>
+            <h3 className="font-label uppercase tracking-widest text-xs font-bold text-outline">
+              {state.language === 'en' ? 'App Language' : 'Idioma do Aplicativo'}
+            </h3>
           </div>
           <div className="bg-surface-container-low p-1 rounded-xl flex">
             <button 
@@ -61,7 +65,9 @@ export function Settings({ state, onUpdate, isOpen, onClose }: SettingsProps) {
         <section>
           <div className="flex items-center gap-3 mb-6">
             <Sun className="w-5 h-5 text-primary" />
-            <h3 className="font-label uppercase tracking-widest text-xs font-bold text-outline">Tema de Exibição</h3>
+            <h3 className="font-label uppercase tracking-widest text-xs font-bold text-outline">
+              {state.language === 'en' ? 'Display Theme' : 'Tema de Exibição'}
+            </h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <button 
@@ -72,7 +78,9 @@ export function Settings({ state, onUpdate, isOpen, onClose }: SettingsProps) {
               )}
             >
               <Sun className="w-6 h-6 text-primary" />
-              <span className="text-[10px] font-label uppercase tracking-wider font-bold">Claro</span>
+              <span className="text-[10px] font-label uppercase tracking-wider font-bold">
+                {state.language === 'en' ? 'Light' : 'Claro'}
+              </span>
             </button>
             <button 
               onClick={() => onUpdate({ theme: 'dark' })}
@@ -82,7 +90,9 @@ export function Settings({ state, onUpdate, isOpen, onClose }: SettingsProps) {
               )}
             >
               <Moon className="w-6 h-6 text-primary" />
-              <span className="text-[10px] font-label uppercase tracking-wider font-bold">Escuro</span>
+              <span className="text-[10px] font-label uppercase tracking-wider font-bold">
+                {state.language === 'en' ? 'Dark' : 'Escuro'}
+              </span>
             </button>
           </div>
         </section>
@@ -91,7 +101,9 @@ export function Settings({ state, onUpdate, isOpen, onClose }: SettingsProps) {
         <section>
           <div className="flex items-center gap-3 mb-6">
             <Type className="w-5 h-5 text-primary" />
-            <h3 className="font-label uppercase tracking-widest text-xs font-bold text-outline">Tamanho da Fonte de Leitura</h3>
+            <h3 className="font-label uppercase tracking-widest text-xs font-bold text-outline">
+              {state.language === 'en' ? 'Reading Font Size' : 'Tamanho da Fonte de Leitura'}
+            </h3>
           </div>
           <div className="space-y-4">
             <input 
@@ -103,9 +115,9 @@ export function Settings({ state, onUpdate, isOpen, onClose }: SettingsProps) {
               className="w-full accent-primary"
             />
             <div className="flex justify-between text-[10px] font-label uppercase tracking-widest text-outline">
-              <span>Pequeno</span>
+              <span>{state.language === 'en' ? 'Small' : 'Pequeno'}</span>
               <span className="text-primary font-bold">{state.fontSize}px</span>
-              <span>Grande</span>
+              <span>{state.language === 'en' ? 'Large' : 'Grande'}</span>
             </div>
           </div>
         </section>

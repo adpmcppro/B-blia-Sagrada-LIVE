@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Biblia Sagrada LIVE</title>
+    <script>
+      // Suppress benign Vite websocket errors in sandboxed environment
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason && (
+          event.reason.message?.includes('WebSocket') || 
+          event.reason.message?.includes('websocket') ||
+          event.reason === 'WebSocket closed without opened.'
+        )) {
+          event.preventDefault();
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

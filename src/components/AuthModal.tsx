@@ -95,7 +95,9 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
         <div className="p-8 space-y-8">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-headline font-bold text-primary">
-              {isLogin ? 'Bem-vindo de volta' : 'Criar Conta'}
+              {isLogin 
+                ? (language === 'en' ? 'Welcome Back' : 'Bem-vindo de volta') 
+                : (language === 'en' ? 'Create Account' : 'Criar Conta')}
             </h2>
             <button onClick={onClose} className="p-2 hover:bg-surface-container rounded-full transition-colors">
               <X className="w-5 h-5" />
@@ -106,7 +108,7 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
             {!isLogin && (
               <div className="space-y-2">
                 <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
-                  Nome Completo
+                  {language === 'en' ? 'Full Name' : 'Nome Completo'}
                 </label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
@@ -116,7 +118,7 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-surface-container p-4 pl-12 rounded-2xl font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    placeholder="João Silva"
+                    placeholder={language === 'en' ? "John Doe" : "João Silva"}
                   />
                 </div>
               </div>
@@ -124,7 +126,7 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
 
             <div className="space-y-2">
               <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
-                Endereço de Email
+                {language === 'en' ? 'Email Address' : 'Endereço de Email'}
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
@@ -134,7 +136,7 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-surface-container p-4 pl-12 rounded-2xl font-body text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="nome@exemplo.com"
+                  placeholder={language === 'en' ? "name@example.com" : "nome@exemplo.com"}
                 />
               </div>
             </div>
@@ -142,7 +144,7 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
-                  Senha
+                  {language === 'en' ? 'Password' : 'Senha'}
                 </label>
                 {isLogin && (
                   <button 
@@ -183,7 +185,9 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
               ) : (
                 <>
                   {isLogin ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                  {isLogin ? 'ENTRAR' : 'CRIAR CONTA'}
+                  {isLogin 
+                    ? (language === 'en' ? 'SIGN IN' : 'ENTRAR') 
+                    : (language === 'en' ? 'CREATE ACCOUNT' : 'CRIAR CONTA')}
                 </>
               )}
             </button>
@@ -194,7 +198,9 @@ export function AuthModal({ isOpen, onClose, language }: AuthModalProps) {
               onClick={() => setIsLogin(!isLogin)}
               className="font-label text-[10px] uppercase tracking-widest font-bold text-outline hover:text-primary transition-colors"
             >
-              {isLogin ? "Não tem uma conta? Cadastre-se" : "Já tem uma conta? Entrar"}
+              {isLogin 
+                ? (language === 'en' ? "Don't have an account? Sign up" : "Não tem uma conta? Cadastre-se") 
+                : (language === 'en' ? "Already have an account? Sign in" : "Já tem uma conta? Entrar")}
             </button>
           </div>
         </div>

@@ -9,12 +9,14 @@ interface IntegrationModalProps {
   language: 'en' | 'pt';
   isPro: boolean;
   onUpgrade: () => void;
+  userId: string;
 }
 
-export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }: IntegrationModalProps) {
+export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade, userId }: IntegrationModalProps) {
   const [copied, setCopied] = React.useState(false);
-  const cleanFeedUrl = window.location.href + "?mode=clean";
-  const remoteControlUrl = window.location.href; // The main app is the remote control
+  const [copiedRemote, setCopiedRemote] = React.useState(false);
+  const cleanFeedUrl = window.location.origin + window.location.pathname + "?mode=clean";
+  const remoteControlUrl = window.location.origin + window.location.pathname + "?mode=remote";
 
   if (!isOpen) return null;
 
@@ -252,12 +254,54 @@ export function IntegrationModal({ isOpen, onClose, language, isPro, onUpgrade }
                       <div className="space-y-2">
                         <p className="text-[10px] text-outline leading-relaxed">{content.remoteDesc}</p>
                         <button 
-                          onClick={() => handleCopy(remoteControlUrl)}
+                          onClick={() => {
+                            navigator.clipboard.writeText(remoteControlUrl);
+                            setCopiedRemote(true);
+                            setTimeout(() => setCopiedRemote(false), 2000);
+                          }}
                           className="text-[10px] font-label font-bold text-primary hover:underline flex items-center gap-1"
                         >
-                          <Copy className="w-3 h-3" />
-                          {language === 'en' ? 'Copy Remote Link' : 'Copiar Link Remoto'}
+                          {copiedRemote ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          {copiedRemote ? (language === 'en' ? 'Copied!' : 'Copiado!') : (language === 'en' ? 'Copy Remote Link' : 'Copiar Link Remoto')}
                         </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Remote Control API */}
+                  <div className="space-y-4 pt-4 border-t border-outline-variant/10">
+                    <div className="flex items-center justify-between">
+                      <label className="font-label text-[10px] font-bold tracking-widest uppercase text-outline">
+                        {language === 'en' ? 'Remote Control API' : 'API de Controle Remoto'}
+                      </label>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 rounded text-[8px] font-bold text-primary uppercase tracking-tighter">
+                        <Zap className="w-2 h-2" />
+                        PRO
+                      </div>
+                    </div>
+                    <div className="bg-surface-container p-4 rounded-xl border border-white/5 space-y-3">
+                      <p className="text-[10px] text-outline leading-relaxed">
+                        {language === 'en' 
+                          ? 'Control the projection panel from external software via REST API.' 
+                          : 'Controle o painel de projeção a partir de softwares externos via API REST.'}
+                      </p>
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-label font-bold text-outline uppercase tracking-widest">Endpoint (POST)</p>
+                        <code className="text-[10px] text-primary break-all bg-black/20 p-1 rounded block">
+                          {window.location.origin}/api/control/{userId}
+                        </code>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-label font-bold text-outline uppercase tracking-widest">Example JSON</p>
+                        <pre className="text-[8px] bg-black/20 p-2 rounded overflow-x-auto text-outline">
+{`{
+  "currentBook": "gen",
+  "currentChapter": 1,
+  "projectedVerse": 0,
+  "translation": "NVI",
+  "dualTranslation": true
+}`}
+                        </pre>
                       </div>
                     </div>
                   </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BOOKS } from '../constants';
+import { BOOKS, VOICE_COMMAND_MAPPING } from '../constants';
 
 interface VoiceCommand {
   type: 'navigate';
@@ -36,34 +36,48 @@ export function useVoiceCommands({ onCommand, language }: UseVoiceCommandsProps)
       };
 
       recognitionRef.current.onend = () => {
-        setIsListening(false);
+        // Auto-restart if we're supposed to be listening
+        if (isListening) {
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            setIsListening(false);
+          }
+        }
       };
     }
-  }, [language]);
+  }, [language, isListening]);
 
   const processTranscript = (text: string) => {
-    // Basic navigation logic: "ir para gênesis capítulo 1 versículo 5"
-    // or "go to genesis chapter 1 verse 5"
-    
     let bookId: string | undefined;
     let chapter: number | undefined;
     let verse: number | undefined;
 
-    // Find book
-    for (const book of BOOKS) {
-      const name = language === 'pt' ? book.namePt.toLowerCase() : book.name.toLowerCase();
-      if (text.includes(name)) {
-        bookId = book.id;
+    // Find book using mapping
+    for (const [key, id] of Object.entries(VOICE_COMMAND_MAPPING)) {
+      if (text.includes(key)) {
+        bookId = id;
         break;
       }
     }
 
-    // Find chapter and verse using regex
-    const chapterMatch = text.match(/(?:capítulo|chapter)\s*(\d+)/);
-    if (chapterMatch) chapter = parseInt(chapterMatch[1]);
+    // Fallback to BOOKS names
+    if (!bookId) {
+      for (const book of BOOKS) {
+        const name = language === 'pt' ? book.namePt.toLowerCase() : book.name.toLowerCase();
+        if (text.includes(name)) {
+          bookId = book.id;
+          break;
+        }
+      }
+    }
 
-    const verseMatch = text.match(/(?:versículo|verse)\s*(\d+)/);
-    if (verseMatch) verse = parseInt(verseMatch[1]);
+    // Find numbers
+    const numbers = text.match(/\d+/g);
+    if (numbers) {
+      if (numbers[0]) chapter = parseInt(numbers[0]);
+      if (numbers[1]) verse = parseInt(numbers[1]);
+    }
 
     if (bookId || chapter || verse) {
       onCommand({ type: 'navigate', bookId, chapter, verse });
@@ -83,8 +97,8 @@ export function useVoiceCommands({ onCommand, language }: UseVoiceCommandsProps)
 
   const stopListening = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
       setIsListening(false);
+      recognitionRef.current.stop();
     }
   };
 

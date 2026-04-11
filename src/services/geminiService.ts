@@ -24,7 +24,7 @@ export async function getDailyMeditation(verse: string, language: 'en' | 'pt') {
 
 export async function fetchBibleChapter(book: string, chapter: number, translation: string, language: 'en' | 'pt') {
   try {
-    const response = await fetch(`/api/bible/${translation}/${book}/${chapter}`);
+    const response = await fetch(`/api/bible/${translation}/${book}/${chapter}?lang=${language}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

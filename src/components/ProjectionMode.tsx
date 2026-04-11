@@ -276,7 +276,7 @@ export function ProjectionMode({
                 animate={{ opacity: 0.6, y: 0 }}
                 className="font-label text-2xl uppercase tracking-[0.2em] font-bold"
               >
-                {BOOKS.find(b => b.id === state.currentBook)?.name.toUpperCase()} {state.currentChapter}:{currentVerseIndex + 1}
+                {BOOKS.find(b => b.id === state.currentBook)?.[state.language === 'en' ? 'name' : 'namePt'].toUpperCase()} {state.currentChapter}:{currentVerseIndex + 1}
                 {settings.dualTranslation && ` (${state.translation}/${settings.secondaryTranslation})`}
               </motion.div>
             )}
@@ -304,7 +304,7 @@ export function ProjectionMode({
             >
               {verses.map((_, i) => (
                 <option key={`verse-opt-${i}`} value={i} className="bg-surface-container-highest text-on-surface">
-                  VERSE {i + 1}
+                  {state.language === 'en' ? 'VERSE' : 'VERSÍCULO'} {i + 1}
                 </option>
               ))}
             </select>
@@ -349,23 +349,29 @@ export function ProjectionMode({
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-outline">
                     <Church className="w-4 h-4" />
-                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">Identidade da Igreja</span>
+                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">
+                      {state.language === 'en' ? 'Church Identity' : 'Identidade da Igreja'}
+                    </span>
                   </div>
                   <div className="space-y-3">
                     <input 
                       type="text" 
-                      placeholder="Nome da Igreja"
+                      placeholder={state.language === 'en' ? "Church Name" : "Nome da Igreja"}
                       value={settings.churchName || ''}
                       onChange={(e) => onUpdateSettings({ churchName: e.target.value })}
                       className="w-full bg-surface-container p-3 rounded-lg text-xs font-label focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                     
                     <div className="space-y-2">
-                      <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">Upload de Logo</label>
+                      <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">
+                        {state.language === 'en' ? 'Logo Upload' : 'Upload de Logo'}
+                      </label>
                       <div className="flex gap-2">
                         <label className="flex-1 bg-surface-container p-3 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-surface-container-lowest transition-colors">
                           <Upload className="w-4 h-4 text-outline" />
-                          <span className="text-[10px] font-label font-bold uppercase tracking-widest">Enviar Logo</span>
+                          <span className="text-[10px] font-label font-bold uppercase tracking-widest">
+                            {state.language === 'en' ? 'Upload Logo' : 'Enviar Logo'}
+                          </span>
                           <input 
                             type="file" 
                             accept="image/*"
@@ -377,11 +383,15 @@ export function ProjectionMode({
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">Upload de Fundo</label>
+                      <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">
+                        {state.language === 'en' ? 'Background Upload' : 'Upload de Fundo'}
+                      </label>
                       <div className="flex gap-2">
                         <label className="flex-1 bg-surface-container p-3 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-surface-container-lowest transition-colors">
                           <Upload className="w-4 h-4 text-outline" />
-                          <span className="text-[10px] font-label font-bold uppercase tracking-widest">Enviar Fundo</span>
+                          <span className="text-[10px] font-label font-bold uppercase tracking-widest">
+                            {state.language === 'en' ? 'Upload Background' : 'Enviar Fundo'}
+                          </span>
                           <input 
                             type="file" 
                             accept="image/*"
@@ -393,7 +403,7 @@ export function ProjectionMode({
                           <button 
                             onClick={() => onUpdateSettings({ backgroundImageUrl: undefined })}
                             className="p-3 bg-error/10 text-error rounded-lg hover:bg-error/20 transition-colors"
-                            title="Remover Fundo"
+                            title={state.language === 'en' ? "Remove Background" : "Remover Fundo"}
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -407,7 +417,9 @@ export function ProjectionMode({
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-outline">
                     <Layers className="w-4 h-4" />
-                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">Tradução Dupla</span>
+                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">
+                      {state.language === 'en' ? 'Dual Translation' : 'Tradução Dupla'}
+                    </span>
                   </div>
                   <div className="space-y-3">
                     <label className="flex items-center gap-3 cursor-pointer group">
@@ -424,7 +436,7 @@ export function ProjectionMode({
                         className="w-4 h-4 accent-primary"
                       />
                       <span className="font-label text-[10px] uppercase tracking-widest font-bold text-outline group-hover:text-primary transition-colors">
-                        Ativar Visualização Dupla
+                        {state.language === 'en' ? 'Enable Dual View' : 'Ativar Visualização Dupla'}
                       </span>
                       {!isPro && <Zap className="w-3 h-3 text-secondary fill-secondary" />}
                     </label>
@@ -434,7 +446,7 @@ export function ProjectionMode({
                         onChange={(e) => onUpdateSettings({ secondaryTranslation: e.target.value as Translation })}
                         className="w-full bg-surface-container p-3 rounded-lg text-xs font-label focus:outline-none"
                       >
-                        {(['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH'] as Translation[]).map(t => (
+                        {(state.language === 'en' ? ['KJV', 'NIV', 'BBE'] : ['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH']).map(t => (
                           <option key={`sec-trans-${t}`} value={t}>{t}</option>
                         ))}
                       </select>
@@ -446,7 +458,9 @@ export function ProjectionMode({
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-outline">
                     <Type className="w-4 h-4" />
-                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">Tipografia</span>
+                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">
+                      {state.language === 'en' ? 'Typography' : 'Tipografia'}
+                    </span>
                   </div>
                   <select 
                     value={settings.fontFamily}
@@ -464,7 +478,9 @@ export function ProjectionMode({
                     ))}
                   </select>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">Tamanho da Fonte</label>
+                    <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">
+                      {state.language === 'en' ? 'Font Size' : 'Tamanho da Fonte'}
+                    </label>
                     <input 
                       type="range" 
                       min="32" 
@@ -480,7 +496,9 @@ export function ProjectionMode({
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-outline">
                     <Palette className="w-4 h-4" />
-                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">Estilos Predefinidos</span>
+                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">
+                      {state.language === 'en' ? 'Presets' : 'Estilos Predefinidos'}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button 
@@ -493,7 +511,7 @@ export function ProjectionMode({
                       })}
                       className="p-3 bg-surface-container rounded-lg text-[10px] font-label font-bold hover:bg-primary hover:text-on-primary transition-all"
                     >
-                      ESCURO CLÁSSICO
+                      {state.language === 'en' ? 'CLASSIC DARK' : 'ESCURO CLÁSSICO'}
                     </button>
                     <button 
                       onClick={() => onUpdateSettings({
@@ -505,7 +523,7 @@ export function ProjectionMode({
                       })}
                       className="p-3 bg-surface-container rounded-lg text-[10px] font-label font-bold hover:bg-primary hover:text-on-primary transition-all"
                     >
-                      MODERNO CLARO
+                      {state.language === 'en' ? 'MODERN LIGHT' : 'MODERNO CLARO'}
                     </button>
                     <button 
                       onClick={() => onUpdateSettings({
@@ -530,7 +548,7 @@ export function ProjectionMode({
                       })}
                       className="p-3 bg-surface-container rounded-lg text-[10px] font-label font-bold hover:bg-primary hover:text-on-primary transition-all"
                     >
-                      OBS TERÇO INFERIOR
+                      {state.language === 'en' ? 'OBS LOWER THIRD' : 'OBS TERÇO INFERIOR'}
                     </button>
                   </div>
                 </div>
@@ -539,11 +557,15 @@ export function ProjectionMode({
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-outline">
                     <Palette className="w-4 h-4" />
-                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">Cores</span>
+                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">
+                      {state.language === 'en' ? 'Colors' : 'Cores'}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-label text-outline uppercase">Fundo</label>
+                      <label className="text-[10px] font-label text-outline uppercase">
+                        {state.language === 'en' ? 'Background' : 'Fundo'}
+                      </label>
                       <input 
                         type="color" 
                         value={settings.backgroundColor}
@@ -552,7 +574,9 @@ export function ProjectionMode({
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-label text-outline uppercase">Texto</label>
+                      <label className="text-[10px] font-label text-outline uppercase">
+                        {state.language === 'en' ? 'Text' : 'Texto'}
+                      </label>
                       <input 
                         type="color" 
                         value={settings.textColor}
@@ -567,7 +591,9 @@ export function ProjectionMode({
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-outline">
                     <AlignLeft className="w-4 h-4" />
-                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">Alinhamento</span>
+                    <span className="font-label text-[10px] uppercase tracking-widest font-bold">
+                      {state.language === 'en' ? 'Alignment' : 'Alinhamento'}
+                    </span>
                   </div>
                   <div className="flex bg-surface-container p-1 rounded-lg">
                     {(['left', 'center', 'right'] as const).map(align => (
@@ -589,7 +615,9 @@ export function ProjectionMode({
 
                 {/* Background Opacity */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">Opacidade da Camada</label>
+                  <label className="text-[10px] font-label text-outline uppercase tracking-widest font-bold">
+                    {state.language === 'en' ? 'Overlay Opacity' : 'Opacidade da Camada'}
+                  </label>
                   <input 
                     type="range" 
                     min="0" 
@@ -617,7 +645,7 @@ export function ProjectionMode({
                   })}
                   className="w-full py-3 border border-outline-variant/30 rounded-xl font-label text-[10px] uppercase tracking-widest font-bold hover:bg-white/5 transition-colors"
                 >
-                  Redefinir Padrão
+                  {state.language === 'en' ? 'Reset Defaults' : 'Redefinir Padrão'}
                 </button>
               </div>
             </motion.div>

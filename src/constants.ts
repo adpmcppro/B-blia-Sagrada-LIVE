@@ -110,3 +110,32 @@ export const MOCK_BIBLE_DATA_PT: Record<string, Record<string, string[]>> = {
     ]
   }
 };
+
+export const VOICE_COMMAND_MAPPING: Record<string, string> = {
+  // Portuguese
+  'gênesis': 'gen', 'êxodo': 'exo', 'levítico': 'lev', 'números': 'num', 'deuteronômio': 'deu',
+  'josué': 'jos', 'juízes': 'jdg', 'rute': 'rut', 'samuel': '1sa', 'reis': '1ki',
+  'crônicas': '1ch', 'esdras': 'ezr', 'neemias': 'neh', 'ester': 'est', 'jó': 'job',
+  'salmos': 'psa', 'provérbios': 'pro', 'eclesiastes': 'ecc', 'cântico': 'sng', 'isaías': 'isa',
+  'jeremias': 'jer', 'lamentações': 'lam', 'ezequiel': 'eze', 'daniel': 'dan', 'oseias': 'hos',
+  'joel': 'joe', 'amós': 'amo', 'obadias': 'oba', 'jonas': 'jon', 'miqueias': 'mic',
+  'naum': 'nah', 'habacuque': 'hab', 'sofonias': 'zep', 'ageu': 'hag', 'zacarias': 'zec',
+  'malaquias': 'mal', 'mateus': 'mat', 'marcos': 'mrk', 'lucas': 'luk', 'joão': 'jhn',
+  'atos': 'act', 'romanos': 'rom', 'coríntios': '1co', 'gálatas': 'gal', 'efésios': 'eph',
+  'filipenses': 'php', 'colossenses': 'col', 'tessalonicenses': '1th', 'timóteo': '1ti', 'tito': 'tit',
+  'filemom': 'phm', 'hebreus': 'heb', 'tiago': 'jas', 'pedro': '1pe', 'judas': 'jud',
+  'apocalipse': 'rev',
+  
+  // English (only unique ones)
+  'genesis': 'gen', 'exodus': 'exo', 'leviticus': 'lev', 'numbers': 'num', 'deuteronomy': 'deu',
+  'joshua': 'jos', 'judges': 'jdg', 'ruth': 'rut', 'chronicles': '1ch', 'ezra': 'ezr', 
+  'nehemiah': 'neh', 'esther': 'est', 'job': 'job', 'psalms': 'psa', 'proverbs': 'pro', 
+  'ecclesiastes': 'ecc', 'song': 'sng', 'isaiah': 'isa', 'jeremiah': 'jer', 'lamentations': 'lam', 
+  'ezekiel': 'eze', 'hosea': 'hos', 'amos': 'amo', 'obadiah': 'oba', 
+  'jonah': 'jon', 'micah': 'mic', 'nahum': 'nah', 'habakkuk': 'hab', 'zephaniah': 'zep', 
+  'haggai': 'hag', 'zechariah': 'zec', 'malachi': 'mal', 'matthew': 'mat', 'mark': 'mrk', 
+  'luke': 'luk', 'john': 'jhn', 'acts': 'act', 'romans': 'rom', 'corinthians': '1co', 
+  'galatians': 'gal', 'ephesians': 'eph', 'philippians': 'php', 'colossians': 'col', 
+  'thessalonians': '1th', 'timothy': '1ti', 'titus': 'tit', 'philemon': 'phm', 'hebrews': 'heb', 
+  'james': 'jas', 'peter': '1pe', 'jude': 'jud', 'revelation': 'rev'
+};

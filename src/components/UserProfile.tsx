@@ -144,14 +144,16 @@ export function UserProfile({ isOpen, onClose, language }: UserProfileProps) {
                   </label>
                 </div>
                 <div className="text-center">
-                  <p className="font-headline font-bold text-lg">{user.displayName || 'Usuário'}</p>
+                  <p className="font-headline font-bold text-lg">{user.displayName || (language === 'en' ? 'User' : 'Usuário')}</p>
                   <p className="text-sm text-outline">{user.email}</p>
                 </div>
               </div>
 
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">Nome</label>
+                  <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
+                    {language === 'en' ? 'Name' : 'Nome'}
+                  </label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
                     <input 
@@ -177,12 +179,16 @@ export function UserProfile({ isOpen, onClose, language }: UserProfileProps) {
             <div className="space-y-8">
               <div className="flex items-center gap-3 text-primary">
                 <Key className="w-5 h-5" />
-                <h3 className="font-headline font-bold">Segurança</h3>
+                <h3 className="font-headline font-bold">
+                  {language === 'en' ? 'Security' : 'Segurança'}
+                </h3>
               </div>
 
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">Senha Atual</label>
+                  <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
+                    {language === 'en' ? 'Current Password' : 'Senha Atual'}
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
                     <input 
@@ -194,7 +200,9 @@ export function UserProfile({ isOpen, onClose, language }: UserProfileProps) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">Nova Senha</label>
+                  <label className="font-label text-[10px] uppercase tracking-widest font-bold text-outline">
+                    {language === 'en' ? 'New Password' : 'Nova Senha'}
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
                     <input 

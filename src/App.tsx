@@ -25,6 +25,7 @@ import { BOOKS, MOCK_BIBLE_DATA, MOCK_BIBLE_DATA_PT } from './constants';
 import { Library } from './components/Library';
 import { Settings } from './components/Settings';
 import { ProjectionMode } from './components/ProjectionMode';
+import { RemoteControl } from './components/RemoteControl';
 import { AuthModal } from './components/AuthModal';
 import { PricingModal } from './components/PricingModal';
 import { IntegrationModal } from './components/IntegrationModal';
@@ -74,6 +75,9 @@ export default function App() {
         }
       }));
     }
+    if (params.get('mode') === 'remote') {
+      setIsRemoteOpen(true);
+    }
   }, []);
 
   const { isListening, startListening, stopListening } = useVoiceCommands({
@@ -99,6 +103,7 @@ export default function App() {
   const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isProjectionOpen, setIsProjectionOpen] = React.useState(false);
+  const [isRemoteOpen, setIsRemoteOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
   const [isPricingOpen, setIsPricingOpen] = React.useState(false);
@@ -267,6 +272,16 @@ export default function App() {
     await signOut(auth);
   };
 
+  if (isRemoteOpen) {
+    return (
+      <RemoteControl 
+        state={state} 
+        onUpdate={(updates) => setState(prev => ({ ...prev, ...updates }))}
+        onUpdateProjection={(updates) => updateProjectionInFirestore(updates)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Top Navigation */}
@@ -276,11 +291,11 @@ export default function App() {
             <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">Biblia Sagrada LIVE</h1>
             
             <div className="hidden lg:flex items-center bg-surface-container p-1 rounded-full overflow-x-auto max-w-[400px] no-scrollbar">
-              {(['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH'] as Translation[]).map(t => (
+              {(state.language === 'en' ? ['KJV', 'NIV', 'BBE'] : ['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH']).map(t => (
                 <button
                   key={`trans-${t}`}
                   onClick={() => {
-                    setState(prev => ({ ...prev, translation: t }));
+                    setState(prev => ({ ...prev, translation: t as Translation }));
                     updateProjectionInFirestore({ translation: t });
                   }}
                   className={cn(
@@ -346,7 +361,7 @@ export default function App() {
                   <div className="flex items-center gap-2 justify-end">
                     {state.isPro && <Zap className="w-3 h-3 text-secondary fill-secondary" />}
                     <p className="text-[10px] font-label font-bold text-primary uppercase tracking-widest leading-none group-hover:text-secondary transition-colors">
-                      {user.displayName || 'Usuário'}
+                      {user.displayName || (state.language === 'en' ? 'User' : 'Usuário')}
                     </p>
                   </div>
                   <p className="text-[9px] font-label font-bold text-outline uppercase tracking-widest">
@@ -648,6 +663,7 @@ export default function App() {
             onClose={() => setIsIntegrationOpen(false)} 
             language={state.language} 
             isPro={state.isPro || false}
+            userId={state.userId || ''}
             onUpgrade={() => {
               setIsIntegrationOpen(false);
               setIsPricingOpen(true);

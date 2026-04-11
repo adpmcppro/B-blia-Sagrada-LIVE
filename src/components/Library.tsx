@@ -40,7 +40,7 @@ export function Library({ isOpen, onClose, onSelect, language }: LibraryProps) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
               <input 
                 type="text"
-                placeholder="Pesquisar livros..."
+                placeholder={language === 'en' ? "Search books..." : "Pesquisar livros..."}
                 className="w-full bg-surface-container-lowest border-none rounded-full py-2 pl-10 pr-4 text-sm font-label focus:ring-1 focus:ring-primary/20"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -66,7 +66,7 @@ export function Library({ isOpen, onClose, onSelect, language }: LibraryProps) {
                     : "hover:bg-surface-container-low text-inverse-surface"
                 )}
               >
-                {book.namePt}
+                {language === 'en' ? book.name : book.namePt}
               </button>
             ))}
           </div>
@@ -76,7 +76,7 @@ export function Library({ isOpen, onClose, onSelect, language }: LibraryProps) {
             {selectedBook ? (
               <div className="space-y-6">
                 <h3 className="text-2xl font-headline font-bold text-primary">
-                  {selectedBook.namePt}
+                  {language === 'en' ? selectedBook.name : selectedBook.namePt}
                 </h3>
                 <div className="grid grid-cols-5 gap-3">
                   {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map(ch => (
@@ -95,7 +95,7 @@ export function Library({ isOpen, onClose, onSelect, language }: LibraryProps) {
               </div>
             ) : (
               <div className="h-full flex items-center justify-center text-outline italic font-body">
-                Selecione um livro para ver os capítulos
+                {language === 'en' ? 'Select a book to see chapters' : 'Selecione um livro para ver os capítulos'}
               </div>
             )}
           </div>
