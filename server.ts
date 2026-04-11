@@ -308,6 +308,6 @@ async function startServer() {
 }
 
 // Only start the server if this file is run directly
-if (process.env.NODE_ENV !== "production" || !process.env.NETLIFY) {
+if (process.env.NODE_ENV !== "production" || (!process.env.NETLIFY && !process.env.VERCEL)) {
   startServer();
 }
