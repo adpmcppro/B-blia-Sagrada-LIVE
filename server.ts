@@ -12,6 +12,8 @@ import dotenv from "dotenv";
 import { XMLParser } from 'fast-xml-parser';
 import { BOOKS } from './src/constants.js';
 
+console.log(`Loaded ${BOOKS.length} books from constants`);
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,9 +24,13 @@ const firebaseConfigPath = path.join(process.cwd(), 'firebase-applet-config.json
 let db: any = null;
 
 if (fs.existsSync(firebaseConfigPath)) {
-  const firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf8'));
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  try {
+    const firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf8'));
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  } catch (error) {
+    console.error("Error initializing Firebase:", error);
+  }
 }
 
 const BOOK_MAPPING: Record<string, string> = {
@@ -155,22 +161,33 @@ async function getBibleData(version: string) {
   }
 
   console.log(`Fetching full Bible data for ${version}: ${url}`);
-  const response = await axios.get(url, { responseType: 'text' });
-  let data;
-
-  if (url.includes('json')) {
-    data = JSON.parse(response.data);
-  } else {
-    const parser = new XMLParser({ 
-      ignoreAttributes: false, 
-      attributeNamePrefix: "",
-      isArray: (name) => ['book', 'chapter', 'verse', 'BOOK', 'CHAPTER', 'VERSE'].includes(name)
+  try {
+    const response = await axios.get(url, { 
+      responseType: 'text',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      timeout: 20000 // 20s timeout for large files
     });
-    data = parser.parse(response.data);
-  }
+    let data;
 
-  bibleFileCache.set(version, data);
-  return data;
+    if (url.includes('json')) {
+      data = JSON.parse(response.data);
+    } else {
+      const parser = new XMLParser({ 
+        ignoreAttributes: false, 
+        attributeNamePrefix: "",
+        isArray: (name) => ['book', 'chapter', 'verse', 'BOOK', 'CHAPTER', 'VERSE', 'BIBLEBOOK', 'testament', 'TESTAMENT'].includes(name)
+      });
+      data = parser.parse(response.data);
+    }
+
+    bibleFileCache.set(version, data);
+    return data;
+  } catch (error: any) {
+    console.error(`Error fetching Bible data for ${version}:`, error.message);
+    throw error;
+  }
 }
 
 async function fetchFromNewSources(version: string, book: string, chapter: string, language: string = 'pt') {
