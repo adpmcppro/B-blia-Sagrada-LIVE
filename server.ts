@@ -60,25 +60,6 @@ const VERSION_MAPPING: Record<string, Record<string, string>> = {
   }
 };
 
-const BIBLE_SOURCES: Record<string, string> = {
-  // Portuguese (JSON)
-  'ACF': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/ACF.json',
-  'ARA': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/ARA.json',
-  'ARC': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/ARC.json',
-  'KJA': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/KJA.json',
-  // Portuguese (XML)
-  'NAA': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNAABible.xml',
-  'NTLH': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNTLHBible.xml',
-  'NVI': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNVI2023Bible.xml',
-  'NVT': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNVTBible.xml',
-  // English (XML)
-  'BKJ': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishKJBible.xml',
-  'NIV': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishNIVBible.xml',
-  'NKJ': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishNKJBible.xml',
-  'NLT': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishNLTBible.xml',
-  'AMPLIFIED': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishAmplifiedBible.xml'
-};
-
 const FULL_BOOK_NAMES: Record<string, { pt: string, en: string }> = {
   'gen': { pt: 'Gênesis', en: 'Genesis' },
   'exo': { pt: 'Êxodo', en: 'Exodus' },
@@ -181,35 +162,7 @@ async function getBibleData(version: string) {
       });
       data = parser.parse(content);
     } else {
-      // Fallback to URL if local file doesn't exist (e.g. first run or missing file)
-      const url = BIBLE_SOURCES[v];
-      if (!url) throw new Error(`Source not found for version: ${v}`);
-
-      console.log(`Fetching remote Bible data for ${v}: ${url}`);
-      const response = await axios.get(url, { 
-        responseType: 'text',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        },
-        timeout: 20000
-      });
-      content = response.data;
-
-      if (url.includes('json')) {
-        data = JSON.parse(content);
-      } else {
-        const parser = new XMLParser({ 
-          ignoreAttributes: false, 
-          attributeNamePrefix: "",
-          isArray: (name) => ['book', 'chapter', 'verse', 'BOOK', 'CHAPTER', 'VERSE', 'BIBLEBOOK', 'testament', 'TESTAMENT'].includes(name)
-        });
-        data = parser.parse(content);
-      }
-      
-      // Optionally save it locally for future "native" use
-      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-      const ext = url.includes('json') ? '.json' : '.xml';
-      fs.writeFileSync(path.join(DATA_DIR, `${v}${ext}`), content);
+      throw new Error(`Local Bible data not found for version: ${v}`);
     }
 
     bibleFileCache.set(v, data);
@@ -230,7 +183,7 @@ async function fetchFromNewSources(version: string, book: string, chapter: strin
   const targetBookName = language === 'en' ? bookInfo?.en : bookInfo?.pt;
   const chapterNum = parseInt(chapter);
 
-  if (BIBLE_SOURCES[v].includes('json')) {
+  if (Array.isArray(data)) {
     // JSON format (damarals) - Array of 66 books
     const bookData = data[bookIndex];
     if (!bookData) throw new Error(`Book index ${bookIndex} not found in JSON`);

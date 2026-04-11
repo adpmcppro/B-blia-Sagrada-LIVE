@@ -7,14 +7,18 @@ import './index.css';
 if (typeof window !== 'undefined') {
   const originalError = console.error;
   console.error = (...args) => {
-    if (args[0] && typeof args[0] === 'string' && args[0].includes('[vite] failed to connect to websocket')) {
+    const msg = args[0] && typeof args[0] === 'string' ? args[0] : '';
+    if (msg.includes('[vite] failed to connect to websocket') || 
+        msg.includes('WebSocket closed without opened') ||
+        msg.includes('WebSocket connection to') && msg.includes('failed')) {
       return;
     }
     originalError.apply(console, args);
   };
 
   window.addEventListener('unhandledrejection', (event) => {
-    if (event.reason && event.reason.message && event.reason.message.includes('WebSocket')) {
+    const msg = event.reason && event.reason.message ? event.reason.message : '';
+    if (msg.includes('WebSocket') || msg.includes('failed to connect to websocket')) {
       event.preventDefault();
     }
   });
