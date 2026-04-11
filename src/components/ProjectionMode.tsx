@@ -446,7 +446,7 @@ export function ProjectionMode({
                         onChange={(e) => onUpdateSettings({ secondaryTranslation: e.target.value as Translation })}
                         className="w-full bg-surface-container p-3 rounded-lg text-xs font-label focus:outline-none"
                       >
-                        {(state.language === 'en' ? ['KJV', 'NIV', 'BBE'] : ['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH']).map(t => (
+                        {(state.language === 'en' ? ['BKJ', 'NIV', 'NKJ', 'NLT', 'AMPLIFIED'] : ['ACF', 'ARA', 'ARC', 'KJA', 'NAA', 'NTLH', 'NVI', 'NVT']).map(t => (
                           <option key={`sec-trans-${t}`} value={t}>{t}</option>
                         ))}
                       </select>

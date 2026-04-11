@@ -42,7 +42,7 @@ export default function App() {
   const [state, setState] = React.useState<BibleState>({
     currentBook: 'gen',
     currentChapter: 1,
-    translation: 'ARA',
+    translation: 'ACF',
     theme: 'light',
     fontSize: 20,
     language: 'pt',
@@ -58,7 +58,7 @@ export default function App() {
       backgroundOpacity: 0.3,
       overlayColor: '#000000',
       dualTranslation: false,
-      secondaryTranslation: 'ARA',
+      secondaryTranslation: 'ACF',
       isCleanFeed: false
     }
   });
@@ -291,7 +291,7 @@ export default function App() {
             <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">Biblia Sagrada LIVE</h1>
             
             <div className="hidden lg:flex items-center bg-surface-container p-1 rounded-full overflow-x-auto max-w-[400px] no-scrollbar">
-              {(state.language === 'en' ? ['KJV', 'NIV', 'BBE'] : ['BKJ', 'ARA', 'ACF', 'NVI', 'NTLH']).map(t => (
+              {(state.language === 'en' ? ['BKJ', 'NIV', 'NKJ', 'NLT', 'AMPLIFIED'] : ['ACF', 'ARA', 'ARC', 'KJA', 'NAA', 'NTLH', 'NVI', 'NVT']).map(t => (
                 <button
                   key={`trans-${t}`}
                   onClick={() => {

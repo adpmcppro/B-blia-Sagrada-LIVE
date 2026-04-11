@@ -1,4 +1,4 @@
-export type Translation = 'BKJ' | 'ARA' | 'ACF' | 'NVI' | 'NTLH' | 'KJV' | 'NIV' | 'BBE';
+export type Translation = 'ACF' | 'ARA' | 'ARC' | 'KJA' | 'NAA' | 'NTLH' | 'NVI' | 'NVT' | 'BKJ' | 'NIV' | 'NKJ' | 'NLT' | 'AMPLIFIED';
 
 export interface Verse {
   number: number;

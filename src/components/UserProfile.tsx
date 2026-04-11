@@ -44,9 +44,6 @@ export function UserProfile({ isOpen, onClose, language }: UserProfileProps) {
       }, { merge: true });
 
       setSuccess(language === 'en' ? 'Profile updated successfully!' : 'Perfil atualizado com sucesso!');
-      
-      // Refresh the page or state to show changes
-      setTimeout(() => window.location.reload(), 1500);
     } catch (err: any) {
       let message = err.message;
       if (err.code === 'auth/network-request-failed') {

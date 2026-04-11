@@ -6,9 +6,11 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { GoogleGenAI } from "@google/genai";
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import fs from 'fs';
 import dotenv from "dotenv";
+import { XMLParser } from 'fast-xml-parser';
+import { BOOKS } from './src/constants.js';
 
 dotenv.config();
 
@@ -44,124 +46,180 @@ const BOOK_MAPPING: Record<string, string> = {
 
 const VERSION_MAPPING: Record<string, Record<string, string>> = {
   pt: {
-    'KJV': 'kjv', 'NIV': 'nvi', 'ALMEIDA': 'acf', 'NVI': 'nvi', 
-    'ACF': 'acf', 'ARC': 'rc', 'ARA': 'ra', 'BKJ': 'kjv', 'NTLH': 'nvi'
+    'ACF': 'ACF', 'ARA': 'ARA', 'ARC': 'ARC', 'KJA': 'KJA', 
+    'NAA': 'NAA', 'NTLH': 'NTLH', 'NVI': 'NVI', 'NVT': 'NVT'
   },
   en: {
-    'KJV': 'kjv', 'NIV': 'kjv', 'ALMEIDA': 'kjv', 'NVI': 'kjv', 
-    'ACF': 'kjv', 'ARC': 'kjv', 'ARA': 'kjv', 'BKJ': 'kjv', 'NTLH': 'kjv'
+    'BKJ': 'BKJ', 'NIV': 'NIV', 'NKJ': 'NKJ', 'NLT': 'NLT', 'AMPLIFIED': 'AMPLIFIED'
   }
+};
+
+const BIBLE_SOURCES: Record<string, string> = {
+  // Portuguese (JSON)
+  'ACF': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/ACF.json',
+  'ARA': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/ARA.json',
+  'ARC': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/ARC.json',
+  'KJA': 'https://raw.githubusercontent.com/damarals/biblias/master/inst/json/KJA.json',
+  // Portuguese (XML)
+  'NAA': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNAABible.xml',
+  'NTLH': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNTLHBible.xml',
+  'NVI': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNVI2023Bible.xml',
+  'NVT': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/PortugueseNVTBible.xml',
+  // English (XML)
+  'BKJ': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishKJBible.xml',
+  'NIV': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishNIVBible.xml',
+  'NKJ': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishNKJBible.xml',
+  'NLT': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishNLTBible.xml',
+  'AMPLIFIED': 'https://raw.githubusercontent.com/Beblia/Holy-Bible-XML-Format/master/EnglishAmplifiedBible.xml'
+};
+
+const FULL_BOOK_NAMES: Record<string, { pt: string, en: string }> = {
+  'gen': { pt: 'Gênesis', en: 'Genesis' },
+  'exo': { pt: 'Êxodo', en: 'Exodus' },
+  'lev': { pt: 'Levítico', en: 'Leviticus' },
+  'num': { pt: 'Números', en: 'Numbers' },
+  'deu': { pt: 'Deuteronômio', en: 'Deuteronomy' },
+  'jos': { pt: 'Josué', en: 'Joshua' },
+  'jdg': { pt: 'Juízes', en: 'Judges' },
+  'rut': { pt: 'Rute', en: 'Ruth' },
+  '1sa': { pt: '1 Samuel', en: '1 Samuel' },
+  '2sa': { pt: '2 Samuel', en: '2 Samuel' },
+  '1ki': { pt: '1 Reis', en: '1 Kings' },
+  '2ki': { pt: '2 Reis', en: '2 Kings' },
+  '1ch': { pt: '1 Crônicas', en: '1 Chronicles' },
+  '2ch': { pt: '2 Crônicas', en: '2 Chronicles' },
+  'ezr': { pt: 'Esdras', en: 'Ezra' },
+  'neh': { pt: 'Neemias', en: 'Nehemiah' },
+  'est': { pt: 'Ester', en: 'Esther' },
+  'job': { pt: 'Jó', en: 'Job' },
+  'psa': { pt: 'Salmos', en: 'Psalms' },
+  'pro': { pt: 'Provérbios', en: 'Proverbs' },
+  'ecc': { pt: 'Eclesiastes', en: 'Ecclesiastes' },
+  'sng': { pt: 'Cantares', en: 'Song of Solomon' },
+  'isa': { pt: 'Isaías', en: 'Isaiah' },
+  'jer': { pt: 'Jeremias', en: 'Jeremiah' },
+  'lam': { pt: 'Lamentações', en: 'Lamentations' },
+  'eze': { pt: 'Ezequiel', en: 'Ezekiel' },
+  'dan': { pt: 'Daniel', en: 'Daniel' },
+  'hos': { pt: 'Oséias', en: 'Hosea' },
+  'joe': { pt: 'Joel', en: 'Joel' },
+  'amo': { pt: 'Amós', en: 'Amos' },
+  'oba': { pt: 'Obadias', en: 'Obadiah' },
+  'jon': { pt: 'Jonas', en: 'Jonah' },
+  'mic': { pt: 'Miquéias', en: 'Micah' },
+  'nah': { pt: 'Naum', en: 'Nahum' },
+  'hab': { pt: 'Habacuque', en: 'Habakkuk' },
+  'zep': { pt: 'Sofonias', en: 'Zephaniah' },
+  'hag': { pt: 'Ageu', en: 'Haggai' },
+  'zec': { pt: 'Zacarias', en: 'Zechariah' },
+  'mal': { pt: 'Malaquias', en: 'Malachi' },
+  'mat': { pt: 'Mateus', en: 'Matthew' },
+  'mrk': { pt: 'Marcos', en: 'Mark' },
+  'luk': { pt: 'Lucas', en: 'Luke' },
+  'jhn': { pt: 'João', en: 'John' },
+  'act': { pt: 'Atos', en: 'Acts' },
+  'rom': { pt: 'Romanos', en: 'Romans' },
+  '1co': { pt: '1 Coríntios', en: '1 Corinthians' },
+  '2co': { pt: '2 Coríntios', en: '2 Corinthians' },
+  'gal': { pt: 'Gálatas', en: 'Galatians' },
+  'eph': { pt: 'Efésios', en: 'Ephesians' },
+  'php': { pt: 'Filipenses', en: 'Philippians' },
+  'col': { pt: 'Colossenses', en: 'Colossians' },
+  '1th': { pt: '1 Tessalonicenses', en: '1 Thessalonians' },
+  '2th': { pt: '2 Tessalonicenses', en: '2 Thessalonians' },
+  '1ti': { pt: '1 Timóteo', en: '1 Timothy' },
+  '2ti': { pt: '2 Timóteo', en: '2 Timothy' },
+  'tit': { pt: 'Tito', en: 'Titus' },
+  'phm': { pt: 'Filemom', en: 'Philemon' },
+  'heb': { pt: 'Hebreus', en: 'Hebrews' },
+  'jas': { pt: 'Tiago', en: 'James' },
+  '1pe': { pt: '1 Pedro', en: '1 Peter' },
+  '2pe': { pt: '2 Pedro', en: '2 Peter' },
+  '1jn': { pt: '1 João', en: '1 John' },
+  '2jn': { pt: '2 João', en: '2 John' },
+  '3jn': { pt: '3 João', en: '3 John' },
+  'jud': { pt: 'Judas', en: 'Jude' },
+  'rev': { pt: 'Apocalipse', en: 'Revelation' }
 };
 
 const cache = new Map<string, { data: string[], timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
+const bibleFileCache = new Map<string, any>();
+
+async function getBibleData(version: string) {
+  const url = BIBLE_SOURCES[version.toUpperCase()];
+  if (!url) throw new Error(`Source not found for version: ${version}`);
+
+  if (bibleFileCache.has(version)) {
+    return bibleFileCache.get(version);
+  }
+
+  console.log(`Fetching full Bible data for ${version}: ${url}`);
+  const response = await axios.get(url, { responseType: 'text' });
+  let data;
+
+  if (url.includes('json')) {
+    data = JSON.parse(response.data);
+  } else {
+    const parser = new XMLParser({ 
+      ignoreAttributes: false, 
+      attributeNamePrefix: "",
+      isArray: (name) => ['book', 'chapter', 'verse', 'BOOK', 'CHAPTER', 'VERSE'].includes(name)
+    });
+    data = parser.parse(response.data);
+  }
+
+  bibleFileCache.set(version, data);
+  return data;
+}
+
+async function fetchFromNewSources(version: string, book: string, chapter: string, language: string = 'pt') {
+  const v = version.toUpperCase();
+  const data = await getBibleData(v);
+  const bookIndex = BOOKS.findIndex(b => b.id === book.toLowerCase());
+  if (bookIndex === -1) throw new Error(`Book not found: ${book}`);
+  
+  const bookInfo = FULL_BOOK_NAMES[book.toLowerCase()];
+  const targetBookName = language === 'en' ? bookInfo?.en : bookInfo?.pt;
+  const chapterNum = parseInt(chapter);
+
+  if (BIBLE_SOURCES[v].includes('json')) {
+    // JSON format (damarals) - Array of 66 books
+    const bookData = data[bookIndex];
+    if (!bookData) throw new Error(`Book index ${bookIndex} not found in JSON`);
+    const chapterData = bookData.chapters[chapterNum - 1];
+    if (!chapterData) throw new Error(`Chapter ${chapterNum} not found`);
+    return chapterData;
+  } else {
+    // XML format (Beblia)
+    const bibleRoot = data.bible || data.BIBLE || data;
+    const testaments = bibleRoot.testament || bibleRoot.TESTAMENT || [bibleRoot];
+    const testamentArray = Array.isArray(testaments) ? testaments : [testaments];
+    
+    const bookNumber = bookIndex + 1;
+    let bookData = null;
+    for (const testament of testamentArray) {
+      const books = testament.book || testament.BOOK || testament.BIBLEBOOK;
+      if (!books) continue;
+      bookData = books.find((b: any) => 
+        (b.number || b.BNUMBER || "").toString() === bookNumber.toString() ||
+        (b.name || b.bname || b.BNAME || "").toLowerCase() === targetBookName?.toLowerCase() ||
+        (b.name || b.bname || b.BNAME || "").toLowerCase() === book.toLowerCase()
+      );
+      if (bookData) break;
+    }
+
+    if (!bookData) throw new Error(`Book ${book} (number ${bookNumber}) not found in XML`);
+    const chapters = bookData.chapter || bookData.CHAPTER;
+    const chapterData = chapters.find((c: any) => (c.number || c.cnumber || c.CNUMBER) == chapterNum);
+    if (!chapterData) throw new Error(`Chapter ${chapterNum} not found`);
+    const verses = chapterData.verse || chapterData.VERSE;
+    return verses.map((v: any) => v['#text'] || v.text || (typeof v === 'string' ? v : JSON.stringify(v)));
+  }
+}
 
 // Initialize Gemini
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
-async function fetchFromAbibliadigital(version: string, book: string, chapter: string, language: string = 'pt') {
-  const lang = language === 'en' ? 'en' : 'pt';
-  const v = VERSION_MAPPING[lang][version.toUpperCase()] || version.toLowerCase();
-  const b = BOOK_MAPPING[book.toLowerCase()] || book.toLowerCase();
-  
-  // Only try abibliadigital for versions we know it supports to avoid 500s
-  const supported = ['nvi', 'ra', 'rc', 'acf', 'kjv'];
-  if (!supported.includes(v)) {
-    throw new Error(`Version ${v} not supported by abibliadigital`);
-  }
-
-  const url = `https://www.abibliadigital.com.br/api/verses/${v}/${b}/${chapter}`;
-  
-  console.log(`Trying abibliadigital (${lang}): ${url}`);
-  const response = await axios.get(url, { 
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-    timeout: 8000 
-  });
-  if (response.data && response.data.verses) {
-    return response.data.verses.map((v: any) => v.text);
-  }
-  throw new Error("No verses in API response");
-}
-
-async function fetchFromGemini(version: string, book: string, chapter: string, language: string = 'pt') {
-  console.log(`Using Gemini fallback for ${book} ${chapter} (${version})`);
-  const prompt = `Provide the full text of the Bible book "${book}" chapter ${chapter} in the "${version}" version. 
-  The language must be ${language === 'en' ? 'English' : 'Portuguese'}.
-  Return ONLY a JSON array of strings, where each string is the text of a verse (in order). 
-  Do NOT include verse numbers or any other text. 
-  Example format: ["Verse 1 text", "Verse 2 text"]`;
-
-  try {
-    const response = await (genAI as any).models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-    });
-    const text = response.text;
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    // Fallback if not valid JSON
-    return text.split('\n').filter((line: string) => line.trim().length > 5).map((line: string) => line.replace(/^\d+[\s.:]*/, '').trim());
-  } catch (error) {
-    console.error("Gemini Bible fetch failed:", error);
-    throw error;
-  }
-}
-
-async function fetchFromBibliaOnline(version: string, book: string, chapter: string, language: string = 'pt') {
-  const boVersions: Record<string, Record<string, string>> = {
-    pt: {
-      'KJV': 'kjv', 'NIV': 'nvi', 'ALMEIDA': 'aa', 'NVI': 'nvi', 
-      'ACF': 'acf', 'ARC': 'arc', 'ARA': 'ara', 'BKJ': 'kjv', 'NTLH': 'ntlh'
-    },
-    en: {
-      'KJV': 'kjv', 'NIV': 'niv', 'ALMEIDA': 'kjv', 'NVI': 'niv', 
-      'ACF': 'kjv', 'ARC': 'kjv', 'ARA': 'kjv', 'BKJ': 'kjv', 'NTLH': 'niv'
-    }
-  };
-  const lang = language === 'en' ? 'en' : 'pt';
-  const v = boVersions[lang][version.toUpperCase()] || version.toLowerCase();
-  const b = BOOK_MAPPING[book.toLowerCase()] || book.toLowerCase();
-  const url = `https://www.bibliaonline.com.br/${v}/${b}/${chapter}`;
-  
-  console.log(`Trying bibliaonline scraping (${lang}): ${url}`);
-  const response = await axios.get(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-    timeout: 12000
-  });
-  
-  const $ = cheerio.load(response.data);
-  const verses: string[] = [];
-  
-  $('article p').each((_, element) => {
-    const text = $(element).text().trim();
-    if (/^\d+/.test(text)) {
-      const parts = text.split(/(?=\d+\s)/).filter(p => p.trim().length > 0);
-      parts.forEach(part => {
-        const cleanPart = part.replace(/^\d+\s*/, '').trim();
-        if (cleanPart.length > 0) verses.push(cleanPart);
-      });
-    }
-  });
-
-  if (verses.length === 0) {
-    $('span.v, .verse, .v, .verse-text').each((_, element) => {
-      const el = $(element).clone();
-      el.find('sup, .v-num, .verse-number').remove();
-      let text = el.text().trim();
-      text = text.replace(/^\d+\s*/, '').trim();
-      if (text && text.length > 1) verses.push(text);
-    });
-  }
-
-  if (verses.length > 0) return verses;
-  throw new Error("No verses found in scraping");
-}
 
 export const app = express();
 
@@ -227,31 +285,12 @@ export async function createServer() {
     }
 
     try {
-      // Strategy 1: abibliadigital API
-      try {
-        const verses = await fetchFromAbibliadigital(version, book, chapter, language);
-        cache.set(cacheKey, { data: verses, timestamp: Date.now() });
-        return res.json(verses);
-      } catch (apiError: any) {
-        console.warn(`abibliadigital failed: ${apiError.message}`);
-        
-        // Strategy 2: bibliaonline Scraping
-        try {
-          const verses = await fetchFromBibliaOnline(version, book, chapter, language);
-          cache.set(cacheKey, { data: verses, timestamp: Date.now() });
-          return res.json(verses);
-        } catch (scrapingError: any) {
-          console.warn(`bibliaonline failed: ${scrapingError.message}`);
-          
-          // Strategy 3: Gemini AI Fallback
-          const verses = await fetchFromGemini(version, book, chapter, language);
-          cache.set(cacheKey, { data: verses, timestamp: Date.now() });
-          return res.json(verses);
-        }
-      }
+      const verses = await fetchFromNewSources(version, book, chapter, language);
+      cache.set(cacheKey, { data: verses, timestamp: Date.now() });
+      return res.json(verses);
     } catch (error: any) {
-      console.error("All Bible fetch strategies failed:", error.message);
-      res.status(500).json({ error: "Failed to fetch Bible chapter from all sources" });
+      console.error("Bible fetch failed:", error.message);
+      res.status(500).json({ error: "Failed to fetch Bible chapter" });
     }
   });
 
