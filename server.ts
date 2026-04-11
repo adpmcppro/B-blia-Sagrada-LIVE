@@ -152,40 +152,70 @@ const cache = new Map<string, { data: string[], timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
 const bibleFileCache = new Map<string, any>();
 
-async function getBibleData(version: string) {
-  const url = BIBLE_SOURCES[version.toUpperCase()];
-  if (!url) throw new Error(`Source not found for version: ${version}`);
+const DATA_DIR = path.join(process.cwd(), 'data', 'bible');
 
-  if (bibleFileCache.has(version)) {
-    return bibleFileCache.get(version);
+async function getBibleData(version: string) {
+  const v = version.toUpperCase();
+  if (bibleFileCache.has(v)) {
+    return bibleFileCache.get(v);
   }
 
-  console.log(`Fetching full Bible data for ${version}: ${url}`);
-  try {
-    const response = await axios.get(url, { 
-      responseType: 'text',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      },
-      timeout: 20000 // 20s timeout for large files
-    });
-    let data;
+  const jsonPath = path.join(DATA_DIR, `${v}.json`);
+  const xmlPath = path.join(DATA_DIR, `${v}.xml`);
+  
+  let data;
+  let content;
 
-    if (url.includes('json')) {
-      data = JSON.parse(response.data);
-    } else {
+  try {
+    if (fs.existsSync(jsonPath)) {
+      console.log(`Loading local Bible data (JSON) for ${v}`);
+      content = fs.readFileSync(jsonPath, 'utf8');
+      data = JSON.parse(content);
+    } else if (fs.existsSync(xmlPath)) {
+      console.log(`Loading local Bible data (XML) for ${v}`);
+      content = fs.readFileSync(xmlPath, 'utf8');
       const parser = new XMLParser({ 
         ignoreAttributes: false, 
         attributeNamePrefix: "",
         isArray: (name) => ['book', 'chapter', 'verse', 'BOOK', 'CHAPTER', 'VERSE', 'BIBLEBOOK', 'testament', 'TESTAMENT'].includes(name)
       });
-      data = parser.parse(response.data);
+      data = parser.parse(content);
+    } else {
+      // Fallback to URL if local file doesn't exist (e.g. first run or missing file)
+      const url = BIBLE_SOURCES[v];
+      if (!url) throw new Error(`Source not found for version: ${v}`);
+
+      console.log(`Fetching remote Bible data for ${v}: ${url}`);
+      const response = await axios.get(url, { 
+        responseType: 'text',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+        timeout: 20000
+      });
+      content = response.data;
+
+      if (url.includes('json')) {
+        data = JSON.parse(content);
+      } else {
+        const parser = new XMLParser({ 
+          ignoreAttributes: false, 
+          attributeNamePrefix: "",
+          isArray: (name) => ['book', 'chapter', 'verse', 'BOOK', 'CHAPTER', 'VERSE', 'BIBLEBOOK', 'testament', 'TESTAMENT'].includes(name)
+        });
+        data = parser.parse(content);
+      }
+      
+      // Optionally save it locally for future "native" use
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+      const ext = url.includes('json') ? '.json' : '.xml';
+      fs.writeFileSync(path.join(DATA_DIR, `${v}${ext}`), content);
     }
 
-    bibleFileCache.set(version, data);
+    bibleFileCache.set(v, data);
     return data;
   } catch (error: any) {
-    console.error(`Error fetching Bible data for ${version}:`, error.message);
+    console.error(`Error loading Bible data for ${v}:`, error.message);
     throw error;
   }
 }
