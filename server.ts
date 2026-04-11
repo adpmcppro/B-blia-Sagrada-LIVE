@@ -163,11 +163,15 @@ async function fetchFromBibliaOnline(version: string, book: string, chapter: str
   throw new Error("No verses found in scraping");
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+export const app = express();
 
+export async function createServer() {
   app.use(express.json());
+
+  // API Route for health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
 
   // Control API for external software
   app.post("/api/control/:userId", async (req, res) => {
@@ -261,7 +265,7 @@ async function startServer() {
         ? `Provide a short, 3-sentence spiritual meditation based on this Bible verse: "${verse}". Focus on encouragement and practical application.`
         : `Forneça uma meditação espiritual curta de 3 frases baseada neste versículo bíblico: "${verse}". Foque em encorajamento e aplicação prática.`;
 
-      const response = await genAI.models.generateContent({
+      const response = await (genAI as any).models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
       });
@@ -272,6 +276,13 @@ async function startServer() {
       res.status(500).json({ error: "Failed to generate meditation" });
     }
   });
+
+  return app;
+}
+
+async function startServer() {
+  const PORT = 3000;
+  await createServer();
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
@@ -296,4 +307,7 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start the server if this file is run directly
+if (process.env.NODE_ENV !== "production" || !process.env.NETLIFY) {
+  startServer();
+}
